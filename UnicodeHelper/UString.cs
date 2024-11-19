@@ -51,19 +51,19 @@ namespace UnicodeHelper
             if (dotNetString == null)
                 throw new ArgumentNullException(nameof(dotNetString));
 
-            List<UChar> chars = new List<UChar>(dotNetString.Length);
+            UChar[] chars = new UChar[dotNetString.Length];
+            int index = 0;
             for (int i = 0; i < dotNetString.Length; i++)
             {
                 UChar uc = UChar.ReadFromStr(dotNetString, i);
-                chars.Add(uc);
-
+                chars[index++] = uc;
                 if (uc > 0xFFFF)
                     i++; // Step over low surrogate
             }
 
-            _characters = chars.ToArray();
+            _characters = chars;
             _startCharacter = 0;
-            Length = _characters.Length;
+            Length = index;
         }
 
         private UString(int start, int length, UChar[] characters)
