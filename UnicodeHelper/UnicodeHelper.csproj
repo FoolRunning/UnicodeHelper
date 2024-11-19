@@ -5,6 +5,21 @@
     <RootNamespace>UnicodeHelper</RootNamespace>
     <RunAnalyzersDuringBuild>False</RunAnalyzersDuringBuild>
     <RunAnalyzersDuringLiveAnalysis>False</RunAnalyzersDuringLiveAnalysis>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Title>Unicode Helper</Title>
+    <Version>$(VersionPrefix) 0.1.0</Version>
+    <Authors>FoolRunning</Authors>
+    <Description>.Net library to get information about Unicode codepoints and to better handle 32-bit codepoints.</Description>
+    <Copyright>© 2024 Tim Steenwyk</Copyright>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageTags>unicode utf-32 codepoint data code point</PackageTags>
+    <RepositoryUrl>https://github.com/FoolRunning/UnicodeHelper</RepositoryUrl>
+    <RepositoryType></RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/FoolRunning/UnicodeHelper</PackageProjectUrl>
+    <SignAssembly>False</SignAssembly>
+    <DelaySign>False</DelaySign>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,8 +31,21 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="CsvHelper" Version="33.0.1" />
-    <PackageReference Include="JetBrains.Annotations" Version="2024.3.0" />
+    <PackageReference Include="JetBrains.Annotations" Version="2024.3.0">
+	  <PrivateAssets>all</PrivateAssets>
+	</PackageReference>
     <PackageReference Include="SharpZipLib" Version="1.4.2" />
   </ItemGroup>
 
