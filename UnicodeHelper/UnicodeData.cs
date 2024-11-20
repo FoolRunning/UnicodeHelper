@@ -22,10 +22,11 @@ namespace UnicodeHelper
 
         #region Data fields
         // Mem size of data (so far):
-        // 1 + 8 + 4 + 4 + 4 = 21
-        // 1,114,112 * 21 = 23,396,352 bytes (about 23MB)
+        // 1 + 1 + 8 + 4 + 4 + 4 = 22
+        // 1,114,112 * 22 = 24,510,464 bytes (about 24MB)
 
         private static readonly byte[] categories = new byte[UnicodeCodepointCount];
+        private static readonly UnicodeBidiClass[] bidiClasses = new UnicodeBidiClass[UnicodeCodepointCount];
         private static readonly double[] numericValues = new double[UnicodeCodepointCount];
         private static readonly UChar[] upperCaseMapping = new UChar[UnicodeCodepointCount];
         private static readonly UChar[] lowerCaseMapping = new UChar[UnicodeCodepointCount];
@@ -125,6 +126,16 @@ namespace UnicodeHelper
             return (UnicodeCategory)categories[(int)uc];
         }
 
+        internal static UnicodeBidiClass GetBidiClass(UChar uc)
+        {
+            return bidiClasses[(int)uc];
+        }
+
+        internal static double GetNumericValue(UChar uc)
+        {
+            return numericValues[(int)uc];
+        }
+
         internal static UChar ToUpper(UChar uc)
         {
             return upperCaseMapping[(int)uc];
@@ -134,35 +145,16 @@ namespace UnicodeHelper
         {
             return lowerCaseMapping[(int)uc];
         }
-
-        internal static double GetNumericValue(UChar uc)
-        {
-            return numericValues[(int)uc];
-        }
         #endregion
 
         #region Helper methods
         private static void UpdateDatabase(int codePoint, UnicodeDataFileLine line)
         {
             // Category
-            UnicodeCategory category = ConvertCategory(line.GeneralCategory);
-            categories[codePoint] = (byte)category;
+            categories[codePoint] = (byte)ConvertCategory(line.GeneralCategory);
 
-            // Uppercase mapping
-            if (!string.IsNullOrEmpty(line.UppercaseMapping))
-                upperCaseMapping[codePoint] = UChar.FromHexStr(line.UppercaseMapping);
-
-            // Lowercase mapping
-            if (!string.IsNullOrEmpty(line.LowercaseMapping))
-                lowerCaseMapping[codePoint] = UChar.FromHexStr(line.LowercaseMapping);
-
-            // Titlecase mapping
-            if (!string.IsNullOrEmpty(line.TitleCaseMapping))
-                titleCaseMapping[codePoint] = UChar.FromHexStr(line.TitleCaseMapping);
-            else if (!string.IsNullOrEmpty(line.UppercaseMapping))
-                titleCaseMapping[codePoint] = UChar.FromHexStr(line.UppercaseMapping);
-
-            Console.WriteLine($"class for {codePoint:X8}: {line.BidiClass}");
+            // Bidi class
+            bidiClasses[codePoint] = ConvertBidiClass(line.BidiClass);
 
             // Numeric value
             if (!string.IsNullOrEmpty(line.Numeric))
@@ -183,6 +175,20 @@ namespace UnicodeHelper
                 Debug.Assert(string.IsNullOrEmpty(line.NumericDigit));
                 Debug.Assert(string.IsNullOrEmpty(line.NumericDecimal));
             }
+
+            // Uppercase mapping
+            if (!string.IsNullOrEmpty(line.UppercaseMapping))
+                upperCaseMapping[codePoint] = UChar.FromHexStr(line.UppercaseMapping);
+
+            // Lowercase mapping
+            if (!string.IsNullOrEmpty(line.LowercaseMapping))
+                lowerCaseMapping[codePoint] = UChar.FromHexStr(line.LowercaseMapping);
+
+            // Titlecase mapping
+            if (!string.IsNullOrEmpty(line.TitleCaseMapping))
+                titleCaseMapping[codePoint] = UChar.FromHexStr(line.TitleCaseMapping);
+            else if (!string.IsNullOrEmpty(line.UppercaseMapping))
+                titleCaseMapping[codePoint] = UChar.FromHexStr(line.UppercaseMapping);
         }
 
         private static UnicodeCategory ConvertCategory(string category)
@@ -229,6 +235,45 @@ namespace UnicodeHelper
                 // File won't contain this category
                 //case "Cn": return UnicodeCategory.OtherNotAssigned;
                 default: throw new ArgumentException($"Unknown category: {category}");
+            }
+        }
+
+        private static UnicodeBidiClass ConvertBidiClass(string bidiClass)
+        {
+            switch (bidiClass)
+            {
+                // Strong types
+                case "L": return UnicodeBidiClass.LeftToRight;
+                case "R": return UnicodeBidiClass.RightToLeft;
+                case "AL": return UnicodeBidiClass.ArabicLetter;
+
+                // Weak types
+                case "EN": return UnicodeBidiClass.EuropeanNumber;
+                case "ES": return UnicodeBidiClass.EuropeanSeparator;
+                case "ET": return UnicodeBidiClass.EuropeanTerminator;
+                case "AN": return UnicodeBidiClass.ArabicNumber;
+                case "CS": return UnicodeBidiClass.CommonSeparator;
+                case "NSM": return UnicodeBidiClass.NonSpacingMark;
+                case "BN": return UnicodeBidiClass.BoundaryNeutral;
+
+                // Neutral types
+                case "B": return UnicodeBidiClass.ParagraphSeparator;
+                case "S": return UnicodeBidiClass.SegmentSeparator;
+                case "WS": return UnicodeBidiClass.WhiteSpace;
+                case "ON": return UnicodeBidiClass.OtherNeutral;
+
+                // Explicit formatting types
+                case "LRE": return UnicodeBidiClass.LeftToRightEmbedding;
+                case "LRO": return UnicodeBidiClass.LeftToRightOverride;
+                case "RLE": return UnicodeBidiClass.RightToLeftEmbedding;
+                case "RLO": return UnicodeBidiClass.RightToLeftOverride;
+                case "PDF": return UnicodeBidiClass.PopDirectionalFormat;
+                case "LRI": return UnicodeBidiClass.LeftToRightIsolate;
+                case "RLI": return UnicodeBidiClass.RightToLeftIsolate;
+                case "FSI": return UnicodeBidiClass.FirstStrongIsolate;
+                case "PDI": return UnicodeBidiClass.PopDirectionalIsolate;
+                
+                default: throw new ArgumentException($"Unknown bidi class: {bidiClass}");
             }
         }
         #endregion

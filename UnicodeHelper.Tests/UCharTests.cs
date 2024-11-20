@@ -50,6 +50,29 @@ namespace UnicodeHelper
         }
         #endregion
 
+        #region GetUnicodeCategory tests
+        private static IEnumerable<object[]> BidiTestData =>
+        [
+            [(UChar)0x0000, UnicodeBidiClass.BoundaryNeutral],
+            [(UChar)' ', UnicodeBidiClass.WhiteSpace],
+            [(UChar)'!', UnicodeBidiClass.OtherNeutral],
+            [(UChar)'3', UnicodeBidiClass.EuropeanNumber],
+            [(UChar)0x00C0, UnicodeBidiClass.LeftToRight],      // LATIN CAPITAL LETTER A WITH GRAVE
+            [(UChar)0x0780, UnicodeBidiClass.ArabicLetter],     // THAANA LETTER HAA
+            [(UChar)0x07C1, UnicodeBidiClass.RightToLeft],      // NKO DIGIT ONE
+            [(UChar)0x0817, UnicodeBidiClass.NonSpacingMark],   // SAMARITAN MARK IN-ALAF
+            [(UChar)0x10880, UnicodeBidiClass.RightToLeft],     // NABATAEAN LETTER FINAL ALEPH
+            [(UChar)0x10D41, UnicodeBidiClass.ArabicNumber],    // GARAY DIGIT ONE
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(BidiTestData))]
+        public void GetBidiClass(UChar uc, UnicodeBidiClass expectedBidiClass)
+        {
+            Assert.AreEqual(expectedBidiClass, UChar.GetBidiClass(uc));
+        }
+        #endregion
+
         #region IsUpper tests
         public static IEnumerable<object[]> IsUpperTestData =>
         [

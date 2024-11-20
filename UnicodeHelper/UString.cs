@@ -9,7 +9,7 @@ using JetBrains.Annotations;
 namespace UnicodeHelper
 {
     [PublicAPI]
-    public class UString : 
+    public sealed class UString : 
         IEquatable<UString>, 
         IEnumerable<UChar>,
         ICloneable,

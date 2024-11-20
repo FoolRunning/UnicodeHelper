@@ -66,9 +66,20 @@ namespace UnicodeHelper
         #endregion
 
         #region Public static methods
+        /// <summary>
+        /// Gets the Unicode category for the specified character
+        /// </summary>
         public static UnicodeCategory GetUnicodeCategory(UChar uc)
         {
             return UnicodeData.GetUnicodeCategory(uc);
+        }
+
+        /// <summary>
+        /// Gets the Unicode bidirectional class for the specified character
+        /// </summary>
+        public static UnicodeBidiClass GetBidiClass(UChar uc)
+        {
+            return UnicodeData.GetBidiClass(uc);
         }
 
         public static bool IsControl(UChar uc)
@@ -150,11 +161,13 @@ namespace UnicodeHelper
         #endregion
 
         #region Overrides of Object
+        /// <inheritdoc />
         public override bool Equals(object obj)
         {
             return obj is UChar other && Equals(other);
         }
 
+        /// <inheritdoc />
         public override int GetHashCode()
         {
             return HashCode.Combine(_codepoint);
