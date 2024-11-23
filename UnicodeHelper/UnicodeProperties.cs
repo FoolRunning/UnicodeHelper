@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using CsvHelper;
 using CsvHelper.Configuration.Attributes;
 using JetBrains.Annotations;
@@ -70,9 +69,29 @@ namespace UnicodeHelper
             {
                 foreach (PropsFileLine line in reader.GetRecords<PropsFileLine>())
                 {
-                    UnicodeProperty property = ConvertProperty(line.PropertyName.Trim());
+                    string name = DataHelper.RemoveTrailingComment(line.PropertyName);
+                    UnicodeProperty property = UnicodeConversion.ConvertProperty(name);
                     DataHelper.HandleCodepointRange(line.CodePointRange, codepoint => 
                         props[codepoint] |= property);
+                }
+            }
+            
+            using (CsvReader reader = new CsvReader(derivedPropsTextReader, DataHelper.CsvConfiguration))
+            {
+                foreach (DerivedPropsFileLine line in reader.GetRecords<DerivedPropsFileLine>())
+                {
+                    string name = DataHelper.RemoveTrailingComment(line.PropertyName);
+                    UnicodeProperty property = UnicodeConversion.ConvertProperty(name);
+                    DataHelper.HandleCodepointRange(line.CodePointRange, codepoint =>
+                    {
+                        if (property != UnicodeProperty.IndicConjunctBreak)
+                            props[codepoint] |= property;
+                        else
+                        {
+                            // TODO: Figure out how to handle these properties
+                            // Cry. :(
+                        }
+                    });
                 }
             }
         }
@@ -82,20 +101,30 @@ namespace UnicodeHelper
         /// <summary>
         /// Gets the properties associated with the specified character
         /// </summary>
-        public static UnicodeProperty GetProps(UChar uc)
+        public static UnicodeProperty GetProps(UCodepoint uc)
         {
             return props[(int)uc];
         }
         #endregion
         
         #region Helper methods
-        private static UnicodeProperty ConvertProperty(string property)
+        
+        #endregion
+
+        #region DerivedPropsFileLine class
+        private sealed class DerivedPropsFileLine
         {
-            switch (property)
-            {
-                case "ASCII_Hex_Digit": return UnicodeProperty.AsciiHexDigit;
-                default: throw new ArgumentException($"Unknown property: {property}");
-            }
+            [Index(0)]
+            [UsedImplicitly]
+            public string CodePointRange { get; set; }
+
+            [Index(1)]
+            [UsedImplicitly]
+            public string PropertyName { get; set; }
+
+            [Index(2)]
+            [UsedImplicitly]
+            public string IndicConjunctBreakProperty { get; set; }
         }
         #endregion
 

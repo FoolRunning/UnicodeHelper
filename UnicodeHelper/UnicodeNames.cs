@@ -42,7 +42,7 @@ namespace UnicodeHelper
         /// Initializes UnicodeNames using the built-in data.
         /// </summary>
         /// <remarks>Note that this initializer is not strictly needed. Any call to a method on the
-        /// class will initialize it. Since initialization can take a relatively long time (~350ms),
+        /// class will initialize it. Since initialization can take a relatively long time (~450ms),
         /// this method is provided for convenience in case an application needs to initialize at
         /// a particular moment (e.g. while a progress bar is showing).</remarks>
         public static void Init() { } // Just invokes the static constructor
@@ -87,7 +87,7 @@ namespace UnicodeHelper
                 foreach (NameAliasFileLine line in reader.GetRecords<NameAliasFileLine>())
                 {
                     int codePoint = int.Parse(line.CodePoint, NumberStyles.HexNumber);
-                    string name = line.Alias.Trim();
+                    string name = line.Alias;
                     switch (line.Type)
                     {
                         case "control": AddName(codePoint, name, NameType.Base); break;
@@ -102,6 +102,17 @@ namespace UnicodeHelper
                     }
                 }
             }
+        }
+        #endregion
+        
+        #region Public methods
+        /// <summary>
+        /// Gets a list of names defined by the Unicode standard. Name order is not guaranteed,
+        /// but should generally start with the most common name for a character.
+        /// </summary>
+        public static IReadOnlyList<NameInfo> GetNames(UCodepoint uc)
+        {
+            return names[(int)uc];
         }
         #endregion
 
@@ -119,22 +130,10 @@ namespace UnicodeHelper
             if (patternIndex >= 0)
             {
                 // Name replacement pattern
-                name = name.Substring(0, patternIndex) + 
-                       ((UChar)codepoint).ToHexString() +
-                       name.Substring(patternIndex + 1);
+                Debug.Assert(patternIndex == name.Length - 1);
+                name = name.Substring(0, patternIndex) + ((UCodepoint)codepoint).ToHexString();
             }
             nameList[nameList.Length - 1] = new NameInfo(name, nameType);
-        }
-        #endregion
-        
-        #region Public methods
-        /// <summary>
-        /// Gets a list of names defined by the Unicode standard. Name order is not guaranteed,
-        /// but should generally start with the most common name for a character.
-        /// </summary>
-        public static IReadOnlyList<NameInfo> GetNames(UChar uc)
-        {
-            return names[(int)uc];
         }
         #endregion
 

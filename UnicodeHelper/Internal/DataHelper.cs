@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
+using CsvHelper;
 using CsvHelper.Configuration;
 using ICSharpCode.SharpZipLib.Zip;
 
@@ -16,7 +17,11 @@ namespace UnicodeHelper.Internal
             HasHeaderRecord = false,
             Delimiter = ";",
             AllowComments = true,
-            IgnoreBlankLines = true
+            Comment = '#',
+            IgnoreBlankLines = true,
+            Mode = CsvMode.NoEscape,
+            TrimOptions = TrimOptions.Trim,
+            MissingFieldFound = null
         };
 
         public static void ReadResource(string resourceFileName, Action<TextReader> readFileAction)
@@ -58,9 +63,10 @@ namespace UnicodeHelper.Internal
             }
         }
 
-        public static bool HasFlags(this UnicodeProperty prop, UnicodeProperty toTest)
+        public static string RemoveTrailingComment(string csvValue)
         {
-            return (prop & toTest) != 0;
+            int commentIndex = csvValue.IndexOf('#');
+            return commentIndex >= 0 ? csvValue.Substring(0, commentIndex).TrimEnd() : csvValue;
         }
     }
 }

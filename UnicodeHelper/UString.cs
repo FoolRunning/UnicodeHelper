@@ -11,38 +11,38 @@ namespace UnicodeHelper
     [PublicAPI]
     public sealed class UString : 
         IEquatable<UString>, 
-        IEnumerable<UChar>,
+        IEnumerable<UCodepoint>,
         ICloneable,
         IComparable,
         IComparable<UString>
     {
         #region Data fields
-        private readonly UChar[] _characters;
-        /// <summary>Index of the character in the array where this string starts (for a substring)</summary>
-        private readonly int _startCharacter;
+        private readonly UCodepoint[] _codepoints;
+        /// <summary>Index of the codepoint in the array where this string starts (for a substring)</summary>
+        private readonly int _startIndex;
 
         private int _cachedHash;
         #endregion
 
         #region Constructors
-        public UString(IReadOnlyList<UChar> characters) : this(characters, 0, characters.Count)
+        public UString(IReadOnlyList<UCodepoint> codepoints) : this(codepoints, 0, codepoints.Count)
         {
         }
 
-        public UString(IReadOnlyList<UChar> characters, int start, int length)
+        public UString(IReadOnlyList<UCodepoint> codepoints, int start, int length)
         {
             // TODO: Write tests for this constructor
-            if (characters == null)
-                throw new ArgumentNullException(nameof(characters));
+            if (codepoints == null)
+                throw new ArgumentNullException(nameof(codepoints));
             if (start < 0)
                 throw new ArgumentOutOfRangeException(nameof(start), "start is less than zero");
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), "length is less than zero");
-            if (start + length > characters.Count)
+            if (start + length > codepoints.Count)
                 throw new ArgumentException("Start and length must reside in array");
 
-            _characters = characters.ToArray();
-            _startCharacter = start;
+            _codepoints = codepoints.ToArray();
+            _startIndex = start;
             Length = length;
         }
 
@@ -51,57 +51,67 @@ namespace UnicodeHelper
             if (dotNetString == null)
                 throw new ArgumentNullException(nameof(dotNetString));
 
-            UChar[] chars = new UChar[dotNetString.Length];
+            UCodepoint[] codepoints = new UCodepoint[dotNetString.Length];
             int index = 0;
             for (int i = 0; i < dotNetString.Length; i++)
             {
-                UChar uc = UChar.ReadFromStr(dotNetString, i);
-                chars[index++] = uc;
+                UCodepoint uc = UCodepoint.ReadFromStr(dotNetString, i);
+                codepoints[index++] = uc;
                 if (uc > 0xFFFF)
                     i++; // Step over low surrogate
             }
 
-            _characters = chars;
-            _startCharacter = 0;
+            _codepoints = codepoints;
+            _startIndex = 0;
             Length = index;
         }
 
-        private UString(int start, int length, UChar[] characters)
+        private UString(int start, int length, UCodepoint[] codepoints)
         {
-            _characters = characters;
-            _startCharacter = start;
+            _codepoints = codepoints;
+            _startIndex = start;
             Length = length;
         }
         #endregion
 
         #region Properties
+        /// <summary>
+        /// Gets the number of Unicode codepoints that make up this Unicode string
+        /// </summary>
         public int Length { get; }
 
-        public UChar this[int index]
+        /// <summary>
+        /// Gets the Unicode codepoint at the specified index in this Unicode string
+        /// </summary>
+        public UCodepoint this[int index]
         {
             get
             {
                 if (index < 0)
-                    throw new ArgumentOutOfRangeException(nameof(index), "index is less than zero");
+                    throw new ArgumentOutOfRangeException(nameof(index), "index must be greater than or equal to zero");
                 if (index >= Length)
                     throw new ArgumentOutOfRangeException(nameof(index), "index must be less than the length of the string");
 
-                return _characters[_startCharacter + index];
+                return _codepoints[_startIndex + index];
             }
         }
         #endregion
 
         #region Implementation of IEquatable
+        /// <inheritdoc />
         public bool Equals(UString other)
         {
             if (ReferenceEquals(other, null) || other.Length != Length)
                 return false;
 
-            int end = _startCharacter + Length;
-            int otherIndex = other._startCharacter;
-            for (int i = _startCharacter; i < end; i++)
+            if (ReferenceEquals(other, this))
+                return true;
+
+            int end = _startIndex + Length;
+            int otherIndex = other._startIndex;
+            for (int i = _startIndex; i < end; i++)
             {
-                if (_characters[i] != other._characters[otherIndex++])
+                if (_codepoints[i] != other._codepoints[otherIndex++])
                     return false;
             }
 
@@ -114,17 +124,17 @@ namespace UnicodeHelper
         {
             // TODO: Write tests for this method
             // Since this class is immutable, just reuse the same underlying data.
-            return new UString(_startCharacter, Length, _characters);
+            return new UString(_startIndex, Length, _codepoints);
         }
         #endregion
         
         #region Implementation of IEnumerable
-        public IEnumerator<UChar> GetEnumerator()
+        public IEnumerator<UCodepoint> GetEnumerator()
         {
             // TODO: Write tests for this method
-            int end = _startCharacter + Length;
-            for (int i = _startCharacter; i < end; i++)
-                yield return _characters[i];
+            int end = _startIndex + Length;
+            for (int i = _startIndex; i < end; i++)
+                yield return _codepoints[i];
         }
         
         IEnumerator IEnumerable.GetEnumerator()
@@ -138,11 +148,11 @@ namespace UnicodeHelper
         {
             // TODO: Write tests for this method
             int minLength = Math.Min(Length, other.Length);
-            int end = _startCharacter + minLength;
-            int otherIndex = other._startCharacter;
-            for (int i = _startCharacter; i < end; i++)
+            int end = _startIndex + minLength;
+            int otherIndex = other._startIndex;
+            for (int i = _startIndex; i < end; i++)
             {
-                int cmp = _characters[i].CompareTo(other._characters[otherIndex++]);
+                int cmp = _codepoints[i].CompareTo(other._codepoints[otherIndex++]);
                 if (cmp != 0)
                     return cmp;
             }
@@ -159,33 +169,33 @@ namespace UnicodeHelper
         #endregion
 
         #region Other public methods
-        public int IndexOf(UChar value)
+        public int IndexOf(UCodepoint value)
         {
             return IndexOf(value, 0, Length);
         }
 
-        public int IndexOf(UChar value, int startIndex)
+        public int IndexOf(UCodepoint value, int startIndex)
         {
             return IndexOf(value, startIndex, Length - startIndex);
         }
 
-        public int IndexOf(UChar value, int startIndex, int count)
+        public int IndexOf(UCodepoint value, int startIndex, int count)
         {
             // TODO: Write tests for this method
             throw new NotImplementedException();
         }
 
-        public int LastIndexOf(UChar value)
+        public int LastIndexOf(UCodepoint value)
         {
             return LastIndexOf(value, 0, Length);
         }
 
-        public int LastIndexOf(UChar value, int startIndex)
+        public int LastIndexOf(UCodepoint value, int startIndex)
         {
             return LastIndexOf(value, startIndex, Length - startIndex);
         }
 
-        public int LastIndexOf(UChar value, int startIndex, int count)
+        public int LastIndexOf(UCodepoint value, int startIndex, int count)
         {
             // TODO: Write tests for this method
             throw new NotImplementedException();
@@ -243,12 +253,12 @@ namespace UnicodeHelper
             throw new NotImplementedException();
         }
 
-        public IEnumerable<UString> Split(params UChar[] separators)
+        public IEnumerable<UString> Split(params UCodepoint[] separators)
         {
             return Split(separators, int.MaxValue);
         }
 
-        public IEnumerable<UString> Split(UChar[] separators, int maxCount, 
+        public IEnumerable<UString> Split(UCodepoint[] separators, int maxCount, 
             StringSplitOptions options = StringSplitOptions.None)
         {
             // TODO: Write tests for this method
@@ -257,31 +267,31 @@ namespace UnicodeHelper
 
         public UString ToUpperInvariant()
         {
-            UChar[] result = new UChar[Length];
+            UCodepoint[] result = new UCodepoint[Length];
             int index = 0;
-            int end = _startCharacter + Length;
-            for (int i = _startCharacter; i < end; i++)
-                result[index++] = UnicodeData.ToUpper(_characters[i]);
+            int end = _startIndex + Length;
+            for (int i = _startIndex; i < end; i++)
+                result[index++] = UnicodeData.ToUpper(_codepoints[i]);
             return new UString(0, result.Length, result);
         }
 
         public UString ToLowerInvariant()
         {
-            UChar[] result = new UChar[Length];
+            UCodepoint[] result = new UCodepoint[Length];
             int index = 0;
-            int end = _startCharacter + Length;
-            for (int i = _startCharacter; i < end; i++)
-                result[index++] = UnicodeData.ToLower(_characters[i]);
+            int end = _startIndex + Length;
+            for (int i = _startIndex; i < end; i++)
+                result[index++] = UnicodeData.ToLower(_codepoints[i]);
             return new UString(0, result.Length, result);
         }
 
-        public UChar[] ToCharArray()
+        public UCodepoint[] ToCharArray()
         {
-            UChar[] result = new UChar[Length];
+            UCodepoint[] result = new UCodepoint[Length];
             int index = 0;
-            int end = _startCharacter + Length;
-            for (int i = _startCharacter; i < end; i++)
-                result[index++] = _characters[i];
+            int end = _startIndex + Length;
+            for (int i = _startIndex; i < end; i++)
+                result[index++] = _codepoints[i];
             return result.ToArray();
         }
 
@@ -294,11 +304,12 @@ namespace UnicodeHelper
             if (start + length > Length)
                 throw new ArgumentException("Start and length must reside in the string");
 
-            return new UString(_startCharacter + start, length, _characters);
+            return new UString(_startIndex + start, length, _codepoints);
         }
         #endregion
 
         #region Overrides of Object
+        /// <inheritdoc />
         [SuppressMessage("ReSharper", "NonReadonlyMemberInGetHashCode")]
         public override int GetHashCode()
         {
@@ -307,26 +318,30 @@ namespace UnicodeHelper
                 return _cachedHash;
             
             HashCode hc = new HashCode();
-            int end = _startCharacter + Length;
-            for (int i = _startCharacter; i < end; i++)
-                hc.Add(_characters[i]);
+            int end = _startIndex + Length;
+            for (int i = _startIndex; i < end; i++)
+                hc.Add(_codepoints[i]);
 
             return _cachedHash = hc.ToHashCode();
         }
 
+        /// <inheritdoc />
         public override bool Equals(object obj)
         {
             return ReferenceEquals(this, obj) || (obj is UString other && Equals(other));
         }
 
+        /// <summary>
+        /// Converts this Unicode string into a standard .Net string
+        /// </summary>
         public override string ToString()
         {
             StringBuilder result = new StringBuilder(Length);
         
-            int end = _startCharacter + Length;
-            for (int i = _startCharacter; i < end; i++)
+            int end = _startIndex + Length;
+            for (int i = _startIndex; i < end; i++)
             {
-                UChar uc = _characters[i];
+                UCodepoint uc = _codepoints[i];
                 if (uc <= 0xFFFF)
                     result.Append((char)uc);
                 else
@@ -338,11 +353,17 @@ namespace UnicodeHelper
         #endregion
 
         #region Operator overrides
+        /// <summary>
+        /// Determines if this Unicode string is equal to another Unicode string
+        /// </summary>
         public static bool operator ==(UString us1, UString us2)
         {
             return Equals(us1, us2);
         }
 
+        /// <summary>
+        /// Determines if this Unicode string is not equal to another Unicode string
+        /// </summary>
         public static bool operator !=(UString us1, UString us2)
         {
             return !Equals(us1, us2);

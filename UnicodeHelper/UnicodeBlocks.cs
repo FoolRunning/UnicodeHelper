@@ -62,7 +62,7 @@ namespace UnicodeHelper
                     string blockName = line.BlockName.Trim();
                     
                     for (int c = startCodePoint; c <= endCodePoint; c++)
-                        blocks.Add(new BlockRange((UChar)startCodePoint, (UChar)endCodePoint, blockName));
+                        blocks.Add(new BlockRange((UCodepoint)startCodePoint, (UCodepoint)endCodePoint, blockName));
                 }
             }
         }
@@ -75,7 +75,7 @@ namespace UnicodeHelper
         /// per the Unicode specification for
         /// <see href="https://www.unicode.org/reports/tr44/#Default_Values">Default Values</see>.
         /// </summary>
-        public static string GetBlockName(UChar uc)
+        public static string GetBlockName(UCodepoint uc)
         {
             int index = blocks.BinarySearch(new BlockRange(uc, uc, null));
             return index >= 0 ? blocks[index].BlockName : "No_Block";
@@ -87,10 +87,10 @@ namespace UnicodeHelper
         {
             public readonly string BlockName;
 
-            private readonly UChar _start;
-            private readonly UChar _end;
+            private readonly UCodepoint _start;
+            private readonly UCodepoint _end;
             
-            public BlockRange(UChar start, UChar end, string blockName)
+            public BlockRange(UCodepoint start, UCodepoint end, string blockName)
             {
                 _start = start;
                 _end = end;

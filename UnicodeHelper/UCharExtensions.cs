@@ -2,7 +2,7 @@
 {
     #region HexPadding enum
     /// <summary>
-    /// The type of padding for hex representations of <see cref="UChar"/>s
+    /// The type of padding for hex representations of <see cref="UCodepoint"/>s
     /// </summary>
     public enum HexPadding
     {
@@ -24,7 +24,7 @@
     #endregion
 
     /// <summary>
-    /// Set of extensions for handling <see cref="UChar"/>s
+    /// Set of extensions for handling <see cref="UCodepoint"/>s
     /// </summary>
     public static class UCharExtensions
     {
@@ -33,13 +33,13 @@
         /// </summary>
         public static string ToHexString(this char c, HexPadding padding = HexPadding.Typical)
         {
-            return ToHexString((UChar)c, padding);
+            return ToHexString((UCodepoint)c, padding);
         }
 
         /// <summary>
         /// Returns this character as a hexadecimal string (e.g. 'A' would be "0041")
         /// </summary>
-        public static string ToHexString(this UChar uc, HexPadding padding = HexPadding.Typical)
+        public static string ToHexString(this UCodepoint uc, HexPadding padding = HexPadding.Typical)
         {
             string formatString;
             switch (padding)

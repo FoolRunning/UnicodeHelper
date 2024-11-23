@@ -25,7 +25,7 @@
 
             for (int i = 0; i < expectedCodepoints.Length; i++)
             {
-                Assert.AreEqual(UChar.ReadFromStr(expectedCodepoints[i], 0), us[i],
+                Assert.AreEqual(UCodepoint.ReadFromStr(expectedCodepoints[i], 0), us[i],
                     "Characters differ at index " + i);
             }
         }
@@ -178,7 +178,7 @@
         public void ToCharArray(string testString, params string[] expectedResult)
         {
             UString us = new(testString);
-            UChar[] expectedArray = expectedResult.Select(s => UChar.ReadFromStr(s, 0)).ToArray();
+            UCodepoint[] expectedArray = expectedResult.Select(s => UCodepoint.ReadFromStr(s, 0)).ToArray();
             Assert.That.SequenceEqual(expectedArray, us.ToCharArray());
         }
         #endregion

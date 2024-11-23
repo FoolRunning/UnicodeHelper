@@ -29,10 +29,10 @@ namespace UnicodeHelper
         #region Data fields
         private static readonly byte[] categories = new byte[UnicodeCodepointCount];
         private static readonly UnicodeBidiClass[] bidiClasses = new UnicodeBidiClass[UnicodeCodepointCount];
-        private static readonly Dictionary<UChar, double> numericValues = new Dictionary<UChar, double>();
-        private static readonly Dictionary<UChar, UChar> upperCaseMappings = new Dictionary<UChar, UChar>();
-        private static readonly Dictionary<UChar, UChar> lowerCaseMappings = new Dictionary<UChar, UChar>();
-        private static readonly Dictionary<UChar, UChar> titleCaseMappings = new Dictionary<UChar, UChar>();
+        private static readonly Dictionary<UCodepoint, double> numericValues = new Dictionary<UCodepoint, double>();
+        private static readonly Dictionary<UCodepoint, UCodepoint> upperCaseMappings = new Dictionary<UCodepoint, UCodepoint>();
+        private static readonly Dictionary<UCodepoint, UCodepoint> lowerCaseMappings = new Dictionary<UCodepoint, UCodepoint>();
+        private static readonly Dictionary<UCodepoint, UCodepoint> titleCaseMappings = new Dictionary<UCodepoint, UCodepoint>();
 
         //private static readonly byte[] s_combiningClasses = new byte[UnicodeCodepointCount];
         //private static readonly int[] s_flags = new int[UnicodeCodepointCount];
@@ -50,7 +50,7 @@ namespace UnicodeHelper
         /// Initializes UnicodeData using the built-in data.
         /// </summary>
         /// <remarks>Note that this initializer is not strictly needed. Any call to a method on the
-        /// class will initialize it. Since initialization can take a relatively long time (~350ms),
+        /// class will initialize it. Since initialization can take a relatively long time (~300ms),
         /// this method is provided for convenience in case an application needs to initialize at
         /// a particular moment (e.g. while a progress bar is showing).</remarks>
         public static void Init() { } // Just invokes the static constructor
@@ -106,8 +106,9 @@ namespace UnicodeHelper
 
             using (CsvReader reader = new CsvReader(textReader, DataHelper.CsvConfiguration))
             {
+                UnicodeCategory rangeCategory = UnicodeCategory.OtherNotAssigned;
+                UnicodeBidiClass rangeBidiClass = UnicodeBidiClass.OtherNeutral;
                 int rangeStartCodePoint = -1;
-                UnicodeDataFileLine rangeStartLine = null;
                 foreach (UnicodeDataFileLine line in reader.GetRecords<UnicodeDataFileLine>())
                 {
                     int codePoint = int.Parse(line.CodePoint, NumberStyles.HexNumber);
@@ -117,10 +118,11 @@ namespace UnicodeHelper
                             throw new InvalidOperationException("Start of range not followed by end of range");
                         
                         for (int c = rangeStartCodePoint; c <= codePoint; c++)
-                            UpdateDatabase(c, rangeStartLine);
+                            UpdateDatabaseForRange(c, rangeCategory, rangeBidiClass);
                         
                         rangeStartCodePoint = -1;
-                        rangeStartLine = null;
+                        rangeCategory = UnicodeCategory.OtherNotAssigned;
+                        rangeBidiClass = UnicodeBidiClass.OtherNeutral;
                     }
                     else if (!line.Name.EndsWith(StartOfRangeNameSuffix))
                         UpdateDatabase(codePoint, line);
@@ -128,7 +130,14 @@ namespace UnicodeHelper
                     {
                         line.Name = line.Name.Substring(1, line.Name.Length - StartOfRangeNameSuffix.Length - 1);
                         rangeStartCodePoint = codePoint;
-                        rangeStartLine = line;
+                        rangeCategory = UnicodeConversion.ConvertCategory(line.GeneralCategory);
+                        rangeBidiClass = UnicodeConversion.ConvertBidiClass(line.BidiClass);
+                        Debug.Assert(string.IsNullOrEmpty(line.Numeric));
+                        Debug.Assert(string.IsNullOrEmpty(line.LowercaseMapping));
+                        Debug.Assert(string.IsNullOrEmpty(line.UppercaseMapping));
+                        Debug.Assert(string.IsNullOrEmpty(line.TitleCaseMapping));
+                        Debug.Assert(line.CombiningClass == "0");
+                        Debug.Assert(string.IsNullOrEmpty(line.DecompositionTypeAndMapping));
                     }
                 }
             }
@@ -143,29 +152,29 @@ namespace UnicodeHelper
         #endregion
 
         #region Internal methods
-        internal static UnicodeCategory GetUnicodeCategory(UChar uc)
+        internal static UnicodeCategory GetUnicodeCategory(UCodepoint uc)
         {
             return (UnicodeCategory)categories[(int)uc];
         }
 
-        internal static UnicodeBidiClass GetBidiClass(UChar uc)
+        internal static UnicodeBidiClass GetBidiClass(UCodepoint uc)
         {
             return bidiClasses[(int)uc];
         }
 
-        internal static double GetNumericValue(UChar uc)
+        internal static double GetNumericValue(UCodepoint uc)
         {
             return numericValues.TryGetValue(uc, out double value) ? value : double.NaN;
         }
 
-        internal static UChar ToUpper(UChar uc)
+        internal static UCodepoint ToUpper(UCodepoint uc)
         {
-            return upperCaseMappings.TryGetValue(uc, out UChar upper) ? upper : uc;
+            return upperCaseMappings.TryGetValue(uc, out UCodepoint upper) ? upper : uc;
         }
 
-        internal static UChar ToLower(UChar uc)
+        internal static UCodepoint ToLower(UCodepoint uc)
         {
-            return lowerCaseMappings.TryGetValue(uc, out UChar lower) ? lower : uc;
+            return lowerCaseMappings.TryGetValue(uc, out UCodepoint lower) ? lower : uc;
         }
         #endregion
 
@@ -176,29 +185,26 @@ namespace UnicodeHelper
                 bidiClasses[c] = bidiClass;
         }
 
+        private static void UpdateDatabaseForRange(int codePoint, 
+            UnicodeCategory category, UnicodeBidiClass bidiClass)
+        {
+            categories[codePoint] = (byte)category;
+            bidiClasses[codePoint] = bidiClass;
+        }
+
         private static void UpdateDatabase(int codePoint, UnicodeDataFileLine line)
         {
             // Category
-            categories[codePoint] = (byte)ConvertCategory(line.GeneralCategory);
+            categories[codePoint] = (byte)UnicodeConversion.ConvertCategory(line.GeneralCategory);
 
             // Bidi class
-            bidiClasses[codePoint] = ConvertBidiClass(line.BidiClass);
+            bidiClasses[codePoint] = UnicodeConversion.ConvertBidiClass(line.BidiClass);
 
-            UChar uc = (UChar)codePoint;
+            UCodepoint uc = (UCodepoint)codePoint;
 
             // Numeric value
             if (!string.IsNullOrEmpty(line.Numeric))
-            {
-                string[] numbers = line.Numeric.Split('/');
-                double value = double.Parse(numbers[0]);
-                if (numbers.Length > 1)
-                {
-                    Debug.Assert(numbers.Length == 2);
-                    double bottom = double.Parse(numbers[1]);
-                    value /= bottom;
-                }
-                numericValues.Add(uc, value);
-            }
+                numericValues.Add(uc, UnicodeConversion.ConvertNumeric(line.Numeric));
             else
             {
                 Debug.Assert(string.IsNullOrEmpty(line.NumericDigit));
@@ -207,103 +213,17 @@ namespace UnicodeHelper
 
             // Uppercase mapping
             if (!string.IsNullOrEmpty(line.UppercaseMapping))
-                upperCaseMappings.Add(uc, UChar.FromHexStr(line.UppercaseMapping));
+                upperCaseMappings.Add(uc, UCodepoint.FromHexStr(line.UppercaseMapping));
 
             // Lowercase mapping
             if (!string.IsNullOrEmpty(line.LowercaseMapping))
-                lowerCaseMappings.Add(uc, UChar.FromHexStr(line.LowercaseMapping));
+                lowerCaseMappings.Add(uc, UCodepoint.FromHexStr(line.LowercaseMapping));
 
             // Titlecase mapping
             if (!string.IsNullOrEmpty(line.TitleCaseMapping))
-                titleCaseMappings.Add(uc, UChar.FromHexStr(line.TitleCaseMapping));
+                titleCaseMappings.Add(uc, UCodepoint.FromHexStr(line.TitleCaseMapping));
             else if (!string.IsNullOrEmpty(line.UppercaseMapping))
-                titleCaseMappings.Add(uc, UChar.FromHexStr(line.UppercaseMapping));
-        }
-
-        private static UnicodeCategory ConvertCategory(string category)
-        {
-            switch (category)
-            {
-                // Cased Letters
-                case "Lu": return UnicodeCategory.UppercaseLetter;
-                case "Ll": return UnicodeCategory.LowercaseLetter;
-                case "Lt": return UnicodeCategory.TitlecaseLetter;
-                // Other letters
-                case "Lm": return UnicodeCategory.ModifierLetter;
-                case "Lo": return UnicodeCategory.OtherLetter;
-                // Marks
-                case "Mn": return UnicodeCategory.NonSpacingMark;
-                case "Mc": return UnicodeCategory.SpacingCombiningMark;
-                case "Me": return UnicodeCategory.EnclosingMark;
-                // Numbers
-                case "Nd": return UnicodeCategory.DecimalDigitNumber;
-                case "Nl": return UnicodeCategory.LetterNumber;
-                case "No": return UnicodeCategory.OtherNumber;
-                // Punctuation
-                case "Pc": return UnicodeCategory.ConnectorPunctuation;
-                case "Pd": return UnicodeCategory.DashPunctuation;
-                case "Ps": return UnicodeCategory.OpenPunctuation;
-                case "Pe": return UnicodeCategory.ClosePunctuation;
-                case "Pi": return UnicodeCategory.InitialQuotePunctuation;
-                case "Pf": return UnicodeCategory.FinalQuotePunctuation;
-                case "Po": return UnicodeCategory.OtherPunctuation;
-                // Symbols
-                case "Sm": return UnicodeCategory.MathSymbol;
-                case "Sc": return UnicodeCategory.CurrencySymbol;
-                case "Sk": return UnicodeCategory.ModifierSymbol;
-                case "So": return UnicodeCategory.OtherSymbol;
-                // Separators
-                case "Zs": return UnicodeCategory.SpaceSeparator;
-                case "Zl": return UnicodeCategory.LineSeparator;
-                case "Zp": return UnicodeCategory.ParagraphSeparator;
-                // Others
-                case "Cc": return UnicodeCategory.Control;
-                case "Cf": return UnicodeCategory.Format;
-                case "Cs": return UnicodeCategory.Surrogate;
-                case "Co": return UnicodeCategory.PrivateUse;
-                // File won't contain this category
-                //case "Cn": return UnicodeCategory.OtherNotAssigned;
-                default: throw new ArgumentException($"Unknown category: {category}");
-            }
-        }
-
-        private static UnicodeBidiClass ConvertBidiClass(string bidiClass)
-        {
-            switch (bidiClass)
-            {
-                // Strong types
-                case "L": return UnicodeBidiClass.LeftToRight;
-                case "R": return UnicodeBidiClass.RightToLeft;
-                case "AL": return UnicodeBidiClass.ArabicLetter;
-
-                // Weak types
-                case "EN": return UnicodeBidiClass.EuropeanNumber;
-                case "ES": return UnicodeBidiClass.EuropeanSeparator;
-                case "ET": return UnicodeBidiClass.EuropeanTerminator;
-                case "AN": return UnicodeBidiClass.ArabicNumber;
-                case "CS": return UnicodeBidiClass.CommonSeparator;
-                case "NSM": return UnicodeBidiClass.NonSpacingMark;
-                case "BN": return UnicodeBidiClass.BoundaryNeutral;
-
-                // Neutral types
-                case "B": return UnicodeBidiClass.ParagraphSeparator;
-                case "S": return UnicodeBidiClass.SegmentSeparator;
-                case "WS": return UnicodeBidiClass.WhiteSpace;
-                case "ON": return UnicodeBidiClass.OtherNeutral;
-
-                // Explicit formatting types
-                case "LRE": return UnicodeBidiClass.LeftToRightEmbedding;
-                case "LRO": return UnicodeBidiClass.LeftToRightOverride;
-                case "RLE": return UnicodeBidiClass.RightToLeftEmbedding;
-                case "RLO": return UnicodeBidiClass.RightToLeftOverride;
-                case "PDF": return UnicodeBidiClass.PopDirectionalFormat;
-                case "LRI": return UnicodeBidiClass.LeftToRightIsolate;
-                case "RLI": return UnicodeBidiClass.RightToLeftIsolate;
-                case "FSI": return UnicodeBidiClass.FirstStrongIsolate;
-                case "PDI": return UnicodeBidiClass.PopDirectionalIsolate;
-                
-                default: throw new ArgumentException($"Unknown bidi class: {bidiClass}");
-            }
+                titleCaseMappings.Add(uc, UCodepoint.FromHexStr(line.UppercaseMapping));
         }
         #endregion
 
