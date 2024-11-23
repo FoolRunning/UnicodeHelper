@@ -462,7 +462,7 @@ namespace UnicodeHelper
         }
         #endregion
 
-        #region IsLetter tests
+        #region IsLetterOrDigit tests
         private static IEnumerable<object[]> IsLetterOrDigitTestData =>
         [
             [(UCodepoint)0x0042, true],  // LATIN CAPITAL LETTER B (Lu)
@@ -494,11 +494,11 @@ namespace UnicodeHelper
             for (char c = '\u0000'; c < 0xFFFF; c++)
             {
                 bool dotNetIsLetterOrDigit = char.IsLetterOrDigit(c);
-                bool IsLetterOrDigit = UCodepoint.IsLetterOrDigit(c);
-                if (IsLetterOrDigit != dotNetIsLetterOrDigit)
+                bool isLetterOrDigit = UCodepoint.IsLetterOrDigit(c);
+                if (isLetterOrDigit != dotNetIsLetterOrDigit)
                 {
                     Console.WriteLine($"IsLetterOrDigit doesn't match for character {((UCodepoint)c).ToHexString()} - " +
-                                      $".Net: {dotNetIsLetterOrDigit}, Found: {IsLetterOrDigit}");
+                                      $".Net: {dotNetIsLetterOrDigit}, Found: {isLetterOrDigit}");
                     incorrectCount++;
                 }
             }

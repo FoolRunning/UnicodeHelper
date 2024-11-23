@@ -72,15 +72,15 @@ namespace UnicodeHelper.Internal
                 { "WS", UnicodeBidiClass.WhiteSpace },
                 { "ON", UnicodeBidiClass.OtherNeutral },
                 // Explicit formatting types
-                {"LRE", UnicodeBidiClass.LeftToRightEmbedding },
-                {"LRO", UnicodeBidiClass.LeftToRightOverride },
-                {"RLE", UnicodeBidiClass.RightToLeftEmbedding },
-                {"RLO", UnicodeBidiClass.RightToLeftOverride },
-                {"PDF", UnicodeBidiClass.PopDirectionalFormat },
-                {"LRI", UnicodeBidiClass.LeftToRightIsolate },
-                {"RLI", UnicodeBidiClass.RightToLeftIsolate },
-                {"FSI", UnicodeBidiClass.FirstStrongIsolate },
-                {"PDI", UnicodeBidiClass.PopDirectionalIsolate }
+                { "LRE", UnicodeBidiClass.LeftToRightEmbedding },
+                { "LRO", UnicodeBidiClass.LeftToRightOverride },
+                { "RLE", UnicodeBidiClass.RightToLeftEmbedding },
+                { "RLO", UnicodeBidiClass.RightToLeftOverride },
+                { "PDF", UnicodeBidiClass.PopDirectionalFormat },
+                { "LRI", UnicodeBidiClass.LeftToRightIsolate },
+                { "RLI", UnicodeBidiClass.RightToLeftIsolate },
+                { "FSI", UnicodeBidiClass.FirstStrongIsolate },
+                { "PDI", UnicodeBidiClass.PopDirectionalIsolate }
             };
 
         private static readonly Dictionary<string, UnicodeProperty> strToPropertyMap =

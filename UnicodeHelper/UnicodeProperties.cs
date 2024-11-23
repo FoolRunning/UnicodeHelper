@@ -37,7 +37,7 @@ namespace UnicodeHelper
         /// Initializes UnicodeProperties using the built-in data.
         /// </summary>
         /// <remarks>Note that this initializer is not strictly needed. Any call to a method on the
-        /// class will initialize it. Since initialization can take a relatively long time (~50ms),
+        /// class will initialize it. Since initialization can take a relatively long time (~150ms),
         /// this method is provided for convenience in case an application needs to initialize at
         /// a particular moment (e.g. while a progress bar is showing).</remarks>
         public static void Init() { } // Just invokes the static constructor
@@ -107,10 +107,6 @@ namespace UnicodeHelper
         }
         #endregion
         
-        #region Helper methods
-        
-        #endregion
-
         #region DerivedPropsFileLine class
         private sealed class DerivedPropsFileLine
         {

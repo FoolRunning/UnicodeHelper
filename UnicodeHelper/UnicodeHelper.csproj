@@ -7,7 +7,7 @@
     <RunAnalyzersDuringLiveAnalysis>False</RunAnalyzersDuringLiveAnalysis>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>Unicode Helper</Title>
-    <Version>$(VersionPrefix)0.1.1</Version>
+    <Version>0.2.0</Version>
     <Authors>FoolRunning</Authors>
     <Description>.Net library to get information about Unicode codepoints and to better handle 32-bit codepoints.</Description>
     <Copyright>© 2024 Tim Steenwyk</Copyright>
