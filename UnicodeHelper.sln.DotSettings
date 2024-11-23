@@ -6,4 +6,8 @@
 	<s:String x:Key="/Default/PatternsAndTemplates/Todo/TodoPatterns/=EC9831F8EFE78D4387D50EAB51FABB46/Pattern/@EntryValue">(?&lt;=\W|^)(?&lt;TAG&gt;ENHANCE)(\W|$)(.*)</s:String>
 	<s:String x:Key="/Default/PatternsAndTemplates/Todo/TodoPatterns/=EC9831F8EFE78D4387D50EAB51FABB46/TodoIconStyle/@EntryValue">Question</s:String>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=Bidi/@EntryIndexedValue">True</s:Boolean>
-	<s:Boolean x:Key="/Default/UserDictionary/Words/=Titlecase/@EntryIndexedValue">True</s:Boolean></wpf:ResourceDictionary>
+	<s:Boolean x:Key="/Default/UserDictionary/Words/=Casefold/@EntryIndexedValue">True</s:Boolean>
+	<s:Boolean x:Key="/Default/UserDictionary/Words/=Casefolded/@EntryIndexedValue">True</s:Boolean>
+	<s:Boolean x:Key="/Default/UserDictionary/Words/=Casemapped/@EntryIndexedValue">True</s:Boolean>
+	<s:Boolean x:Key="/Default/UserDictionary/Words/=Titlecase/@EntryIndexedValue">True</s:Boolean>
+	<s:Boolean x:Key="/Default/UserDictionary/Words/=Titlecased/@EntryIndexedValue">True</s:Boolean></wpf:ResourceDictionary>

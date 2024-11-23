@@ -18,7 +18,7 @@ namespace UnicodeHelper
     {
         #region Data fields
         private readonly UChar[] _characters;
-        /// <summary>Index of the character in the list where this string starts (for a substring)</summary>
+        /// <summary>Index of the character in the array where this string starts (for a substring)</summary>
         private readonly int _startCharacter;
 
         private int _cachedHash;

@@ -5,9 +5,12 @@ namespace UnicodeHelper
     /// <summary>
     /// Unicode bidirectional class values
     /// </summary>
+    /// <remarks>Descriptions taken directly from the Unicode specification
+    /// <see href="https://www.unicode.org/reports/tr44/#Bidi_Class_Values">Bidi_Class_Values</see></remarks>
     [PublicAPI]
     public enum UnicodeBidiClass : byte
     {
+        #region Strong types
         /// <summary>
         /// Any strong left-to-right character. Signified by the Unicode bidi designation "L". The value is 0.
         /// </summary>
@@ -20,7 +23,9 @@ namespace UnicodeHelper
         /// Any strong right-to-left (Arabic-type) character. Signified by the Unicode bidi designation "AL". The value is 2.
         /// </summary>
         ArabicLetter,
+        #endregion
 
+        #region Weak types
         /// <summary>
         /// Any ASCII digit or Eastern Arabic-Indic digit. Signified by the Unicode bidi designation "EN". The value is 3.
         /// </summary>
@@ -49,7 +54,9 @@ namespace UnicodeHelper
         /// Most format characters, control codes, or non-characters. Signified by the Unicode bidi designation "BN". The value is 9.
         /// </summary>
         BoundaryNeutral,
+        #endregion
         
+        #region Neutral types
         /// <summary>
         /// Various newline characters. Signified by the Unicode bidi designation "B". The value is 10.
         /// </summary>
@@ -66,7 +73,9 @@ namespace UnicodeHelper
         /// Most other symbols and punctuation marks. Signified by the Unicode bidi designation "ON". The value is 13.
         /// </summary>
         OtherNeutral,
+        #endregion
         
+        #region Explicit formatting types
         /// <summary>
         /// U+202A: the LR embedding control. Signified by the Unicode bidi designation "LRE". The value is 14.
         /// </summary>
@@ -103,5 +112,6 @@ namespace UnicodeHelper
         /// U+2069: terminates an isolate control. Signified by the Unicode bidi designation "PDI". The value is 22.
         /// </summary>
         PopDirectionalIsolate
+        #endregion
     }
 }

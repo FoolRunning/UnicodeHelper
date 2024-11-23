@@ -3,12 +3,16 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using CsvHelper;
-using CsvHelper.Configuration;
 using JetBrains.Annotations;
 using UnicodeHelper.Internal;
 
 namespace UnicodeHelper
 {
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <remarks>This class represents the data in the Unicode specification
+    /// <see href="https://www.unicode.org/reports/tr44/#Blocks.txt">Blocks.txt</see></remarks>
     [PublicAPI]
     public static class UnicodeBlocks
     {
@@ -24,24 +28,31 @@ namespace UnicodeHelper
         #endregion
 
         #region Initialization
+        /// <summary>
+        /// Initializes UnicodeBlocks using the built-in data.
+        /// </summary>
+        /// <remarks>Note that this initializer is not strictly needed. Any call to a method on the
+        /// class will initialize it. Since initialization can take a relatively long time (~50ms),
+        /// this method is provided for convenience in case an application needs to initialize at
+        /// a particular moment (e.g. while a progress bar is showing).</remarks>
         public static void Init() { } // Just invokes the static constructor
 
+        /// <summary>
+        /// Initializes UnicodeBlocks using the file specified. The file must be in the default
+        /// Unicode standard format for a <c>Blocks.txt</c> file.
+        /// </summary>
         public static void Init(string unicodeBlocksFilePath)
         {
             DataHelper.ReadDataFile(unicodeBlocksFilePath, Init);
         }
 
+        /// <summary>
+        /// Initializes UnicodeBlocks using the specified reader. The data must be in the default
+        /// Unicode standard format for a <c>Blocks.txt</c> file.
+        /// </summary>
         public static void Init(TextReader textReader)
         {
-            CsvConfiguration config = new CsvConfiguration(CultureInfo.InvariantCulture)
-            {
-                HasHeaderRecord = false,
-                AllowComments = true,
-                IgnoreBlankLines = true,
-                Delimiter = ";"
-            };
-
-            using (CsvReader reader = new CsvReader(textReader, config))
+            using (CsvReader reader = new CsvReader(textReader, DataHelper.CsvConfiguration))
             {
                 foreach (BlocksFileLine line in reader.GetRecords<BlocksFileLine>())
                 {
@@ -58,6 +69,12 @@ namespace UnicodeHelper
         #endregion
 
         #region Public methods
+        /// <summary>
+        /// Gets the name of the Unicode block to which the specified character belongs. If the
+        /// specified character does not belong to a known block, then "No_Block" is returned
+        /// per the Unicode specification for
+        /// <see href="https://www.unicode.org/reports/tr44/#Default_Values">Default Values</see>.
+        /// </summary>
         public static string GetBlockName(UChar uc)
         {
             int index = blocks.BinarySearch(new BlockRange(uc, uc, null));

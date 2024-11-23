@@ -50,7 +50,7 @@ namespace UnicodeHelper
         }
         #endregion
 
-        #region GetUnicodeCategory tests
+        #region GetBidiClass tests
         private static IEnumerable<object[]> BidiTestData =>
         [
             [(UChar)0x0000, UnicodeBidiClass.BoundaryNeutral],

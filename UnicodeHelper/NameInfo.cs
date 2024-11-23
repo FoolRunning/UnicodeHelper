@@ -2,17 +2,26 @@
 
 namespace UnicodeHelper
 {
+    /// <summary>
+    /// Contains name information about a character
+    /// </summary>
     [PublicAPI]
     public sealed class NameInfo
     {
-        public NameInfo(string name, string abbreviation)
+        internal NameInfo(string name, NameType nameType)
         {
             Name = name;
-            Abbreviation = abbreviation;
+            NameType = nameType;
         }
 
-        public string Name { get; internal set; }
+        /// <summary>
+        /// The name
+        /// </summary>
+        public string Name { get; }
 
-        public string Abbreviation { get; internal set; }
+        /// <summary>
+        /// The type of name that is represented
+        /// </summary>
+        public NameType NameType { get; }
     }
 }
