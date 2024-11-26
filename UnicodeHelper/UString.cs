@@ -66,7 +66,7 @@ namespace UnicodeHelper
             Length = index;
         }
 
-        private UString(int start, int length, UCodepoint[] codepoints)
+        internal UString(int start, int length, UCodepoint[] codepoints)
         {
             _codepoints = codepoints;
             _startIndex = start;
@@ -120,6 +120,7 @@ namespace UnicodeHelper
         #endregion
 
         #region Implementation of IClonable
+        /// <inheritdoc />
         public object Clone()
         {
             // TODO: Write tests for this method
@@ -129,12 +130,10 @@ namespace UnicodeHelper
         #endregion
         
         #region Implementation of IEnumerable
+        /// <inheritdoc />
         public IEnumerator<UCodepoint> GetEnumerator()
         {
-            // TODO: Write tests for this method
-            int end = _startIndex + Length;
-            for (int i = _startIndex; i < end; i++)
-                yield return _codepoints[i];
+            return new UCodepointEnumerator(this);
         }
         
         IEnumerator IEnumerable.GetEnumerator()
@@ -144,6 +143,9 @@ namespace UnicodeHelper
         #endregion
         
         #region Implementation of IComparable
+        /// <summary>
+        /// Compares this <see cref="UString"/> to another <see cref="UString"/>.
+        /// </summary>
         public int CompareTo(UString other)
         {
             // TODO: Write tests for this method
@@ -159,7 +161,10 @@ namespace UnicodeHelper
 
             return Length - other.Length;
         }
-        
+
+        /// <summary>
+        /// Compares this <see cref="UString"/> to another <see cref="UString"/>.
+        /// </summary>
         public int CompareTo(object obj)
         {
             if (!(obj is UString other))
@@ -237,14 +242,12 @@ namespace UnicodeHelper
         {
             // TODO: Write tests for this method
             throw new NotImplementedException();
-            //return IndexOf(value) == 0;
         }
 
         public bool EndsWith(UString value, bool ignoreCase = false)
         {
             // TODO: Write tests for this method
             throw new NotImplementedException();
-            //return LastIndexOf(value) == Length - value.Length;
         }
 
         public bool Contains(UString value, bool ignoreCase = false)
@@ -267,6 +270,7 @@ namespace UnicodeHelper
 
         public UString ToUpperInvariant()
         {
+            // TODO: Handle complex uppercasing rules
             UCodepoint[] result = new UCodepoint[Length];
             int index = 0;
             int end = _startIndex + Length;
@@ -277,6 +281,7 @@ namespace UnicodeHelper
 
         public UString ToLowerInvariant()
         {
+            // TODO: Handle complex lowercasing rules
             UCodepoint[] result = new UCodepoint[Length];
             int index = 0;
             int end = _startIndex + Length;
@@ -285,7 +290,7 @@ namespace UnicodeHelper
             return new UString(0, result.Length, result);
         }
 
-        public UCodepoint[] ToCharArray()
+        public UCodepoint[] ToCodepointArray()
         {
             UCodepoint[] result = new UCodepoint[Length];
             int index = 0;
@@ -293,6 +298,11 @@ namespace UnicodeHelper
             for (int i = _startIndex; i < end; i++)
                 result[index++] = _codepoints[i];
             return result.ToArray();
+        }
+
+        public UString SubString(int start)
+        {
+            return SubString(start, Length - start);
         }
 
         public UString SubString(int start, int length)
@@ -367,6 +377,57 @@ namespace UnicodeHelper
         public static bool operator !=(UString us1, UString us2)
         {
             return !Equals(us1, us2);
+        }
+        #endregion
+
+        #region UCodepointEnumerator class
+        private sealed class UCodepointEnumerator : IEnumerator<UCodepoint>
+        {
+            private UString _str;
+            private int _index = -1;
+            private UCodepoint _current;
+
+            public UCodepointEnumerator(UString str)
+            {
+                _str = str;
+            }
+
+            public void Dispose()
+            {
+                if (_str != null)
+                    _index = _str.Length;
+                _str = null;
+            }
+
+            public UCodepoint Current
+            {
+                get
+                {
+                    if (_index == -1)
+                        throw new InvalidOperationException("Enumerator not started");
+                    if (_index >= _str.Length)
+                        throw new InvalidOperationException("Enumerator has completed");
+                    return _current;
+                }
+            }
+
+            object IEnumerator.Current => Current;
+
+            public bool MoveNext()
+            {
+                _index++;
+                if (_index >= _str.Length)
+                    return false;
+
+                _current = _str._codepoints[_str._startIndex + _index];
+                return true;
+            }
+
+            public void Reset()
+            {
+                _index = -1;
+                _current = UCodepoint.MinValue;
+            }
         }
         #endregion
     }

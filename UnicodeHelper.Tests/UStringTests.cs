@@ -50,8 +50,18 @@
         [DynamicData(nameof(EqualsTestData))]
         public void Equals(string string1, string string2, bool expectedResult)
         {
-            UString us1 = new(string1);
+            const string pre = "prefix";
+            UString us1 = new(pre + string1);
+            us1 = us1.SubString(pre.Length);
             UString us2 = new(string2);
+
+            Assert.AreEqual(expectedResult, us1.Equals(us2), "Equal method failed");
+            Assert.AreEqual(expectedResult, us1 == us2, "Equal operator failed");
+            Assert.AreEqual(!expectedResult, us1 != us2, "NotEqual operator failed");
+
+            us1 = new(string1);
+            us2 = new(pre + string2);
+            us2 = us2.SubString(pre.Length);
 
             Assert.AreEqual(expectedResult, us1.Equals(us2), "Equal method failed");
             Assert.AreEqual(expectedResult, us1 == us2, "Equal operator failed");
@@ -140,7 +150,12 @@
         [DynamicData(nameof(ToUpperInvariantTestData))]
         public void ToUpperInvariant(string testString, string expectedResult)
         {
+            const string pre = "prefix";
             UString us = new(testString);
+            Assert.AreEqual(new UString(expectedResult), us.ToUpperInvariant());
+
+            us = new(pre + testString);
+            us = us.SubString(pre.Length); // Test making sure that a substring results in the correct result
             Assert.AreEqual(new UString(expectedResult), us.ToUpperInvariant());
         }
         #endregion
@@ -159,13 +174,18 @@
         [DynamicData(nameof(ToLowerInvariantTestData))]
         public void ToLowerInvariant(string testString, string expectedResult)
         {
+            const string pre = "prefix";
             UString us = new(testString);
+            Assert.AreEqual(new UString(expectedResult), us.ToLowerInvariant());
+
+            us = new(pre + testString);
+            us = us.SubString(pre.Length); // Test making sure that a substring results in the correct result
             Assert.AreEqual(new UString(expectedResult), us.ToLowerInvariant());
         }
         #endregion
 
-        #region ToCharArray tests
-        private static IEnumerable<object[]> ToCharArrayTestData =>
+        #region ToCodepointArray tests
+        private static IEnumerable<object[]> ToCodepointArrayTestData =>
         [
             [""],
             ["This is\r\na test!", "T", "h", "i", "s", " ", "i", "s", "\r", "\n", "a", " ", "t", "e", "s", "t", "!"],
@@ -174,12 +194,44 @@
         ];
 
         [TestMethod]
-        [DynamicData(nameof(ToCharArrayTestData))]
-        public void ToCharArray(string testString, params string[] expectedResult)
+        [DynamicData(nameof(ToCodepointArrayTestData))]
+        public void ToCodepointArray(string testString, params string[] expectedResult)
         {
+            const string pre = "prefix";
             UString us = new(testString);
             UCodepoint[] expectedArray = expectedResult.Select(s => UCodepoint.ReadFromStr(s, 0)).ToArray();
-            Assert.That.SequenceEqual(expectedArray, us.ToCharArray());
+            Assert.That.SequenceEqual(expectedArray, us.ToCodepointArray());
+
+            us = new(pre + testString);
+            us = us.SubString(pre.Length); // Test making sure that a substring results in the correct result
+            expectedArray = expectedResult.Select(s => UCodepoint.ReadFromStr(s, 0)).ToArray();
+            Assert.That.SequenceEqual(expectedArray, us.ToCodepointArray());
+        }
+        #endregion
+
+        #region Enumerator tests
+        private static IEnumerable<object[]> EnumeratorTestData =>
+        [
+            [""],
+            ["This is\r\na test!", (UCodepoint)'T', (UCodepoint)'h', (UCodepoint)'i', (UCodepoint)'s', (UCodepoint)' ', 
+                (UCodepoint)'i', (UCodepoint)'s', (UCodepoint)'\r', (UCodepoint)'\n', (UCodepoint)'a', (UCodepoint)' ', 
+                (UCodepoint)'t', (UCodepoint)'e', (UCodepoint)'s', (UCodepoint)'t', (UCodepoint)'!'],
+            ["العربية", (UCodepoint)'ا', (UCodepoint)'ل', (UCodepoint)'ع', (UCodepoint)'ر', (UCodepoint)'ب', 
+                (UCodepoint)'ي', (UCodepoint)'ة'],
+            ["😁🤔😮", (UCodepoint)0x0001f601, (UCodepoint)0x0001f914, (UCodepoint)0x0001f62e]
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(EnumeratorTestData))]
+        public void Enumerator(string testString, params UCodepoint[] expectedResult)
+        {
+            const string pre = "prefix";
+            UString us = new(testString);
+            Assert.That.SequenceEqual(expectedResult, us);
+
+            us = new(pre + testString);
+            us = us.SubString(pre.Length); // Test making sure that a substring results in the correct result
+            Assert.That.SequenceEqual(expectedResult, us);
         }
         #endregion
     }

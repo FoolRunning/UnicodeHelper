@@ -66,17 +66,22 @@ namespace UnicodeHelper
             return new UCodepoint(c);
         }
 
+        internal UCodepoint(char value)
+        {
+            _value = value;
+        }
+
+        internal UCodepoint(int value)
+        {
+            _value = value;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static UCodepoint CreateChecked(int codepoint)
         {
             if (codepoint < 0 || codepoint > UnicodeData.MaxUnicodeCodepoint)
                 throw new ArgumentOutOfRangeException(nameof(codepoint), "Codepoint is outside the valid Unicode range");
             return new UCodepoint(codepoint);
-        }
-
-        private UCodepoint(int value)
-        {
-            _value = value;
         }
         #endregion
 

@@ -1,4 +1,6 @@
-﻿namespace UnicodeHelper
+﻿using JetBrains.Annotations;
+
+namespace UnicodeHelper
 {
     #region HexPadding enum
     /// <summary>
@@ -26,7 +28,8 @@
     /// <summary>
     /// Set of extensions for handling <see cref="UCodepoint"/>s
     /// </summary>
-    public static class UCharExtensions
+    [PublicAPI]
+    public static class UCodepointExtensions
     {
         /// <summary>
         /// Returns this character as a hexadecimal string (e.g. 'A' would be "0041")
