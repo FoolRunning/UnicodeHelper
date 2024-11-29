@@ -8,6 +8,9 @@ using JetBrains.Annotations;
 
 namespace UnicodeHelper
 {
+    /// <summary>
+    /// Represents a sequence of Unicode codepoints
+    /// </summary>
     [PublicAPI]
     public sealed class UString : 
         IEquatable<UString>, 
@@ -25,35 +28,60 @@ namespace UnicodeHelper
         #endregion
 
         #region Constructors
+        /// <summary>
+        /// Creates a new <see cref="UString"/> from the specified codepoints
+        /// </summary>
         public UString(IReadOnlyList<UCodepoint> codepoints) : this(codepoints, 0, codepoints.Count)
         {
         }
 
-        public UString(IReadOnlyList<UCodepoint> codepoints, int start, int length)
+        /// <summary>
+        /// Creates a new <see cref="UString"/> from the specified codepoints starting from the
+        /// specified starting index and taking the specified number of codepoints
+        /// </summary>
+        public UString(IReadOnlyList<UCodepoint> codepoints, int startIndex, int count)
         {
             // TODO: Write tests for this constructor
             if (codepoints == null)
                 throw new ArgumentNullException(nameof(codepoints));
-            if (start < 0)
-                throw new ArgumentOutOfRangeException(nameof(start), "start is less than zero");
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), "length is less than zero");
-            if (start + length > codepoints.Count)
-                throw new ArgumentException("Start and length must reside in array");
+            if (startIndex < 0)
+                throw new ArgumentOutOfRangeException(nameof(startIndex), "startIndex is less than zero");
+            if (count < 0)
+                throw new ArgumentOutOfRangeException(nameof(count), "count is less than zero");
+            if (startIndex + count > codepoints.Count)
+                throw new ArgumentException("startIndex and count must reside in the list");
 
+            // TODO: Since we're making a new array anyway, make an array of the specified subset
             _codepoints = codepoints.ToArray();
-            _startIndex = start;
-            Length = length;
+            _startIndex = startIndex;
+            Length = count;
         }
 
-        public UString(string dotNetString)
+        /// <summary>
+        /// Creates a new <see cref="UString"/> from the specified .Net string
+        /// </summary>
+        public UString(string dotNetString) : this(dotNetString, 0, dotNetString.Length)
+        {
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="UString"/> from the specified substring of a .Net string
+        /// </summary>
+        public UString(string dotNetString, int startIndex, int count)
         {
             if (dotNetString == null)
                 throw new ArgumentNullException(nameof(dotNetString));
+            if (startIndex < 0)
+                throw new ArgumentOutOfRangeException(nameof(startIndex), "startIndex is less than zero");
+            if (count < 0)
+                throw new ArgumentOutOfRangeException(nameof(count), "count is less than zero");
+            if (startIndex + count > dotNetString.Length)
+                throw new ArgumentException("startIndex and count must reside in the string");
 
-            UCodepoint[] codepoints = new UCodepoint[dotNetString.Length];
+            UCodepoint[] codepoints = new UCodepoint[count];
             int index = 0;
-            for (int i = 0; i < dotNetString.Length; i++)
+            int end = startIndex + count;
+            for (int i = startIndex; i < end; i++)
             {
                 UCodepoint uc = UCodepoint.ReadFromStr(dotNetString, i);
                 codepoints[index++] = uc;
@@ -174,45 +202,103 @@ namespace UnicodeHelper
         #endregion
 
         #region Other public methods
+        /// <summary>
+        /// Finds the zero-based index of the first occurrence of the specified Unicode codepoint in this string.
+        /// </summary>
         public int IndexOf(UCodepoint value)
         {
+            // TODO: Write tests for this method
             return IndexOf(value, 0, Length);
         }
 
+        /// <summary>
+        /// Finds the zero-based index of the first occurrence of the specified Unicode codepoint in this string.
+        /// The search starts at a specified codepoint position.
+        /// </summary>
         public int IndexOf(UCodepoint value, int startIndex)
         {
+            // TODO: Write tests for this method
             return IndexOf(value, startIndex, Length - startIndex);
         }
 
+        /// <summary>
+        /// Finds the zero-based index of the first occurrence of the specified Unicode codepoint in this string.
+        /// The search starts at a specified codepoint position and examines a specified number of codepoint positions.
+        /// </summary>
         public int IndexOf(UCodepoint value, int startIndex, int count)
         {
-            // TODO: Write tests for this method
-            throw new NotImplementedException();
+            if (startIndex < 0)
+                throw new ArgumentOutOfRangeException(nameof(startIndex), "startIndex is less than zero");
+            if (count < 0)
+                throw new ArgumentOutOfRangeException(nameof(count), "count is less than zero");
+            if (startIndex + count > Length)
+                throw new ArgumentException("StartIndex and count must reside in the string");
+
+            int start = _startIndex + startIndex;
+            int end = start + count;
+            for (int i = start; i < end; i++)
+            {
+                if (_codepoints[i] == value)
+                    return i - _startIndex;
+            }
+
+            return -1;
         }
 
+        /// <summary>
+        /// Finds the zero-based index of the last occurrence of the specified Unicode codepoint in this string.
+        /// </summary>
         public int LastIndexOf(UCodepoint value)
         {
-            return LastIndexOf(value, 0, Length);
+            // TODO: Write tests for this method
+            return LastIndexOf(value, Length - 1, Length);
         }
 
+        /// <summary>
+        /// Finds the zero-based index of the last occurrence of the specified Unicode codepoint in this string.
+        /// The search starts at a specified codepoint position and proceeds backward toward the beginning of the
+        /// string.
+        /// </summary>
         public int LastIndexOf(UCodepoint value, int startIndex)
         {
-            return LastIndexOf(value, startIndex, Length - startIndex);
+            // TODO: Write tests for this method
+            return LastIndexOf(value, startIndex, startIndex + 1);
         }
 
+        /// <summary>
+        /// Finds the zero-based index of the last occurrence of the specified Unicode codepoint in this string.
+        /// The search starts at a specified codepoint position and proceeds backward toward the beginning of the
+        /// string for a specified number of codepoint positions.
+        /// </summary>
         public int LastIndexOf(UCodepoint value, int startIndex, int count)
         {
-            // TODO: Write tests for this method
-            throw new NotImplementedException();
+            if (count < 0)
+                throw new ArgumentOutOfRangeException(nameof(count), "count is less than zero");
+            if (startIndex >= Length)
+                throw new ArgumentOutOfRangeException(nameof(startIndex), "startIndex must be less than the length of the string");
+            if (startIndex - count + 1 < 0)
+                throw new ArgumentException("StartIndex and count must reside in the string");
+
+            int start = _startIndex + startIndex;
+            int end = start - count;
+            for (int i = start; i > end; i--)
+            {
+                if (_codepoints[i] == value)
+                    return i - _startIndex;
+            }
+
+            return -1;
         }
 
         public int IndexOf(UString value)
         {
+            // TODO: Write tests for this method
             return IndexOf(value, 0, Length);
         }
 
         public int IndexOf(UString value, int startIndex)
         {
+            // TODO: Write tests for this method
             return IndexOf(value, startIndex, Length - startIndex);
         }
 
@@ -297,7 +383,7 @@ namespace UnicodeHelper
             int end = _startIndex + Length;
             for (int i = _startIndex; i < end; i++)
                 result[index++] = _codepoints[i];
-            return result.ToArray();
+            return result;
         }
 
         public UString SubString(int start)
@@ -308,13 +394,24 @@ namespace UnicodeHelper
         public UString SubString(int start, int length)
         {
             if (start < 0)
-                throw new ArgumentOutOfRangeException(nameof(start), "start is less than zero");
+                throw new ArgumentOutOfRangeException(nameof(start), "startIndex is less than zero");
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), "length is less than zero");
             if (start + length > Length)
                 throw new ArgumentException("Start and length must reside in the string");
 
             return new UString(_startIndex + start, length, _codepoints);
+        }
+
+        public UString Normalize()
+        {
+            return Normalize(NormalizationForm.FormC);
+        }
+
+        public UString Normalize(NormalizationForm form)
+        {
+            // TODO: Write tests for this method
+            return this;
         }
         #endregion
 

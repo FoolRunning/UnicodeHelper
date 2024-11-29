@@ -234,5 +234,109 @@
             Assert.That.SequenceEqual(expectedResult, us);
         }
         #endregion
+
+        #region IndexOf_UCodepoint tests
+        private static IEnumerable<object[]> UCodepointIndexOfExceptionTestData =>
+        [
+            ["", 0, 1, typeof(ArgumentException)],
+            ["", 1, 0, typeof(ArgumentException)],
+            ["This", -1, 2, typeof(ArgumentOutOfRangeException)],
+            ["This", 0, 5, typeof(ArgumentException)],
+            ["This", 0, -1, typeof(ArgumentOutOfRangeException)],
+            ["This", 4, 1, typeof(ArgumentException)],
+            ["😁🤔😮", 1, 3, typeof(ArgumentException)],
+            ["😁🤔😮", 3, 1, typeof(ArgumentException)]
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(UCodepointIndexOfExceptionTestData))]
+        public void IndexOf_UCodepoint_InvalidParameters(string testString, int start, int count, 
+            Type expectedExceptionType)
+        {
+            UString us = new(testString);
+            Assert.That.ThrowsException(expectedExceptionType, () => us.IndexOf(' ', start, count));
+        }
+
+        private static IEnumerable<object[]> UCodepointIndexOfTestData =>
+        [
+            ["", (UCodepoint)'A', 0, 0, -1],
+            ["This is\r\na test!", (UCodepoint)'\r', 2, 6, 7],
+            ["This is\r\na test!", (UCodepoint)'i', 0, 16, 2],
+            ["This is\r\na test!", (UCodepoint)'T', 2, 6, -1],
+            ["This", (UCodepoint)'s', 4, 0, -1],
+            ["This", (UCodepoint)'i', 2, 0, -1],
+            ["العربية", (UCodepoint)'ا', 0, 7, 0],
+            ["العربية", (UCodepoint)'ة', 0, 7, 6],
+            ["😁🤔😮", UCodepoint.ReadFromStr("😁", 0), 0, 3, 0],
+            ["😁🤔😮", UCodepoint.ReadFromStr("😮", 0), 1, 2, 2]
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(UCodepointIndexOfTestData))]
+        public void IndexOf_UCodepoint(string testString, UCodepoint codePoint, int start, int count, int expectedResult)
+        {
+            const string pre = "prefix";
+            UString us = new(testString);
+            Assert.AreEqual(expectedResult, us.IndexOf(codePoint, start, count));
+
+            us = new(pre + testString);
+            us = us.SubString(pre.Length); // Test making sure that a substring results in the correct result
+            Assert.AreEqual(expectedResult, us.IndexOf(codePoint, start, count));
+        }
+        #endregion
+
+        #region LastIndexOf_UCodepoint tests
+        private static IEnumerable<object[]> UCodepointLastIndexOfExceptionTestData =>
+        [
+            ["", 0, 1, typeof(ArgumentOutOfRangeException)],
+            ["", 1, 0, typeof(ArgumentOutOfRangeException)],
+            ["This", -1, 2, typeof(ArgumentException)],
+            ["This", 3, 5, typeof(ArgumentException)],
+            ["This", 3, -1, typeof(ArgumentOutOfRangeException)],
+            ["This", -1, 1, typeof(ArgumentException)],
+            ["😁🤔😮", 1, 3, typeof(ArgumentException)],
+            ["😁🤔😮", 3, 1, typeof(ArgumentOutOfRangeException)]
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(UCodepointLastIndexOfExceptionTestData))]
+        public void LastIndexOf_UCodepoint_InvalidParameters(string testString, int start, int count, 
+            Type expectedExceptionType)
+        {
+            UString us = new(testString);
+            Assert.That.ThrowsException(expectedExceptionType, () => us.LastIndexOf(' ', start, count));
+        }
+
+        private static IEnumerable<object[]> UCodepointLastIndexOfTestData =>
+        [
+            ["", (UCodepoint)'A', -1, 0, -1],
+            ["This is\r\na test!", (UCodepoint)'\r', 8, 6, 7],
+            ["This is\r\na test!", (UCodepoint)'i', 15, 16, 5],
+            ["This is\r\na test!", (UCodepoint)'T', 8, 6, -1],
+            ["This", (UCodepoint)'T', -1, 0, -1],
+            ["This", (UCodepoint)'s', 3, 0, -1],
+            ["This", (UCodepoint)'i', 2, 0, -1],
+            ["العربية", (UCodepoint)'ا', 6, 7, 0],
+            ["العربية", (UCodepoint)'ة', 6, 7, 6],
+            ["😁🤔😮", UCodepoint.ReadFromStr("😮", 0), 2, 3, 2],
+            ["😁🤔😮", UCodepoint.ReadFromStr("😁", 0), 1, 2, 0]
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(UCodepointLastIndexOfTestData))]
+        public void LastIndexOf_UCodepoint(string testString, UCodepoint codePoint, 
+            int start, int count, int expectedResult)
+        {
+            const string pre = "prefix";
+            UString us = new(testString);
+            Assert.AreEqual(expectedResult, us.LastIndexOf(codePoint, start, count));
+
+            us = new(pre + testString);
+            us = us.SubString(pre.Length); // Test making sure that a substring results in the correct result
+            Assert.AreEqual(expectedResult, us.LastIndexOf(codePoint, start, count));
+        }
+        #endregion
+
+
     }
 }

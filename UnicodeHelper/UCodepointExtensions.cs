@@ -40,7 +40,7 @@ namespace UnicodeHelper
         }
 
         /// <summary>
-        /// Returns this character as a hexadecimal string (e.g. 'A' would be "0041")
+        /// Returns this codepoint as a hexadecimal string (e.g. 'A' would be "0041")
         /// </summary>
         public static string ToHexString(this UCodepoint uc, HexPadding padding = HexPadding.Typical)
         {

@@ -126,12 +126,14 @@ namespace UnicodeHelper
                 names[codepoint] = nameList;
             }
 
-            int patternIndex = name.IndexOf('*');
-            if (patternIndex >= 0)
+            if (name[name.Length - 1] == '*')
             {
                 // Name replacement pattern
-                Debug.Assert(patternIndex == name.Length - 1);
-                name = name.Substring(0, patternIndex) + ((UCodepoint)codepoint).ToHexString();
+                name = name.Substring(0, name.Length - 1) + ((UCodepoint)codepoint).ToHexString();
+            }
+            else
+            {
+                Debug.Assert(name.IndexOf('*') == -1);
             }
             nameList[nameList.Length - 1] = new NameInfo(name, nameType);
         }
