@@ -3,3 +3,4 @@ _ReSharper.Caches/**
 **/bin/**
 **/obj/**
 *.user
+UnicodeHelper/Resources/UCD/**

@@ -146,9 +146,9 @@ namespace UnicodeHelper
 
         #region Properties
         /// <summary>
-        /// The supported Unicode version
+        /// The supported Unicode version of the built-in data
         /// </summary>
-        public static Version Version => new Version(16, 0, 0);
+        public static Version UnicodeVersion => new Version(16, 0, 0);
         #endregion
 
         #region Internal methods

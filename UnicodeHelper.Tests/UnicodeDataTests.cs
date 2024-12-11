@@ -6,7 +6,7 @@ namespace UnicodeHelper
         [TestMethod]
         public void Version()
         {
-            Assert.AreEqual(new Version(16, 0, 0), UnicodeData.Version);
+            Assert.AreEqual(new Version(16, 0, 0), UnicodeData.UnicodeVersion);
         }
     }
 }
