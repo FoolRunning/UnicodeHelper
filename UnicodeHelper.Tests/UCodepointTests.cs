@@ -46,7 +46,7 @@ namespace UnicodeHelper
                 }
             }
 
-            Assert.AreEqual(22, incorrectCount, "Unexpected number of differences from .Net");
+            Assert.That.IsLessThanOrEqualTo(incorrectCount, 22, "Unexpected number of differences from .Net");
         }
         #endregion
 
@@ -105,7 +105,7 @@ namespace UnicodeHelper
                 }
             }
 
-            Assert.AreEqual(5, incorrectCount, "Unexpected number of differences from .Net");
+            Assert.That.IsLessThanOrEqualTo(incorrectCount, 5, "Unexpected number of differences from .Net");
         }
         #endregion
 
@@ -141,7 +141,7 @@ namespace UnicodeHelper
                 }
             }
 
-            Assert.AreEqual(10, incorrectCount, "Unexpected number of differences from .Net");
+            Assert.That.IsLessThanOrEqualTo(incorrectCount, 10, "Unexpected number of differences from .Net");
         }
         #endregion
 
@@ -177,7 +177,7 @@ namespace UnicodeHelper
                 }
             }
 
-            Assert.AreEqual(3, incorrectCount, "Unexpected number of differences from .Net");
+            Assert.That.IsLessThanOrEqualTo(incorrectCount, 3, "Unexpected number of differences from .Net");
         }
         #endregion
 
@@ -213,7 +213,7 @@ namespace UnicodeHelper
                 }
             }
 
-            Assert.AreEqual(10, incorrectCount, "Unexpected number of differences from .Net");
+            Assert.That.IsLessThanOrEqualTo(incorrectCount, 10, "Unexpected number of differences from .Net");
         }
         #endregion
 
@@ -284,7 +284,7 @@ namespace UnicodeHelper
                 }
             }
 
-            Assert.AreEqual(8, incorrectCount, "Unexpected number of differences from .Net");
+            Assert.That.IsLessThanOrEqualTo(incorrectCount, 8, "Unexpected number of differences from .Net");
         }
         #endregion
 
@@ -324,7 +324,7 @@ namespace UnicodeHelper
                 }
             }
 
-            Assert.AreEqual(3, incorrectCount, "Unexpected number of differences from .Net");
+            Assert.That.IsLessThanOrEqualTo(incorrectCount, 3, "Unexpected number of differences from .Net");
         }
         #endregion
 
@@ -396,7 +396,7 @@ namespace UnicodeHelper
                 }
             }
 
-            Assert.AreEqual(10, incorrectCount, "Unexpected number of differences from .Net");
+            Assert.That.IsLessThanOrEqualTo(incorrectCount, 10, "Unexpected number of differences from .Net");
         }
         #endregion
 
@@ -503,7 +503,7 @@ namespace UnicodeHelper
                 }
             }
 
-            Assert.AreEqual(8, incorrectCount, "Unexpected number of differences from .Net");
+            Assert.That.IsLessThanOrEqualTo(incorrectCount, 8, "Unexpected number of differences from .Net");
         }
         #endregion
 

@@ -336,7 +336,5 @@
             Assert.AreEqual(expectedResult, us.LastIndexOf(codePoint, start, count));
         }
         #endregion
-
-
     }
 }

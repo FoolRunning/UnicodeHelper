@@ -203,25 +203,37 @@ namespace UnicodeHelper
 
         #region Other public methods
 
-        public UString Concat(UString us1, UString us2)
+        public static UString Concat(UCodepoint uc, UString us)
         {
             // TODO: Write tests for this method
             throw new NotImplementedException();
         }
 
-        public UString Concat(UString us1, UString us2, UString us3)
+        public static UString Concat(UString us, UCodepoint uc)
         {
             // TODO: Write tests for this method
             throw new NotImplementedException();
         }
 
-        public UString Concat(UString us1, UString us2, UString us3, UString us4)
+        public static UString Concat(UString us1, UString us2)
         {
             // TODO: Write tests for this method
             throw new NotImplementedException();
         }
 
-        public UString Concat(params UString[] uStrings)
+        public static UString Concat(UString us1, UString us2, UString us3)
+        {
+            // TODO: Write tests for this method
+            throw new NotImplementedException();
+        }
+
+        public static UString Concat(UString us1, UString us2, UString us3, UString us4)
+        {
+            // TODO: Write tests for this method
+            throw new NotImplementedException();
+        }
+
+        public static UString Concat(params UString[] uStrings)
         {
             // TODO: Write tests for this method
             throw new NotImplementedException();
@@ -436,7 +448,7 @@ namespace UnicodeHelper
         public UString Normalize(NormalizationForm form)
         {
             // TODO: Write tests for this method
-            return this;
+            throw new NotImplementedException();
         }
         #endregion
 
@@ -499,6 +511,30 @@ namespace UnicodeHelper
         public static bool operator !=(UString us1, UString us2)
         {
             return !Equals(us1, us2);
+        }
+
+        /// <summary>
+        /// Combines two Unicode strings together
+        /// </summary>
+        public static UString operator +(UString us1, UString us2)
+        {
+            return Concat(us1, us2);
+        }
+
+        /// <summary>
+        /// Combines a Unicode string and Unicode codepoint together
+        /// </summary>
+        public static UString operator +(UString us, UCodepoint uc)
+        {
+            return Concat(us, uc);
+        }
+
+        /// <summary>
+        /// Combines a Unicode codepoint and Unicode string together
+        /// </summary>
+        public static UString operator +(UCodepoint uc, UString us)
+        {
+            return Concat(uc, us);
         }
         #endregion
 

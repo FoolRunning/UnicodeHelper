@@ -4,3 +4,4 @@ _ReSharper.Caches/**
 **/obj/**
 *.user
 UnicodeHelper/Resources/UCD/**
+**/*.snk

@@ -33,8 +33,18 @@
             int end = Math.Min(e1List.Count, e2List.Count);
             for (int i = 0; i < end; i++)
                 Assert.AreEqual(e1List[i], e2List[i], "Sequence differs at index " + i);
-
+            
             Assert.AreEqual(e1List.Count, e2List.Count, "Sequences have different number of items");
+        }
+
+        public static void IsLessThanOrEqualTo<T>(this Assert assert, T value, T upperValue,
+            string? message = null) where T : IComparable<T>
+        {
+            if (message != null)
+                message = "\n" + message;
+
+            Assert.IsTrue(value.CompareTo(upperValue) <= 0, 
+                $"Expected {value} to be less than or equal to {upperValue}" + message);
         }
     }
 }
