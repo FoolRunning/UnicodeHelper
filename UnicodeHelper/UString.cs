@@ -202,6 +202,31 @@ namespace UnicodeHelper
         #endregion
 
         #region Other public methods
+
+        public UString Concat(UString us1, UString us2)
+        {
+            // TODO: Write tests for this method
+            throw new NotImplementedException();
+        }
+
+        public UString Concat(UString us1, UString us2, UString us3)
+        {
+            // TODO: Write tests for this method
+            throw new NotImplementedException();
+        }
+
+        public UString Concat(UString us1, UString us2, UString us3, UString us4)
+        {
+            // TODO: Write tests for this method
+            throw new NotImplementedException();
+        }
+
+        public UString Concat(params UString[] uStrings)
+        {
+            // TODO: Write tests for this method
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// Finds the zero-based index of the first occurrence of the specified Unicode codepoint in this string.
         /// </summary>
