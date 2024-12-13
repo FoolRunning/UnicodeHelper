@@ -1,5 +1,5 @@
 # UnicodeHelper
-![Test status](https://github.com/FoolRunning/UnicodeHelper/actions/workflows/dotnet.yml/badge.svg)
+[![Test status](https://github.com/FoolRunning/UnicodeHelper/actions/workflows/dotnet.yml/badge.svg)](https://github.com/FoolRunning/UnicodeHelper/actions/workflows/dotnet.yml)
 
 *Note: This is very much a work-in-progress.*
 
