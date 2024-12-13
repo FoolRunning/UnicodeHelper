@@ -7,7 +7,7 @@
     <RunAnalyzersDuringLiveAnalysis>False</RunAnalyzersDuringLiveAnalysis>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>Unicode Helper</Title>
-    <Version>0.5.1</Version>
+    <Version>0.5.2</Version>
     <Authors>FoolRunning</Authors>
     <Description>.Net library to get information about Unicode codepoints and to better handle 32-bit codepoints.</Description>
     <Copyright>© 2024 Tim Steenwyk</Copyright>
@@ -15,11 +15,12 @@
     <PackageTags>unicode utf-32 codepoint data code point</PackageTags>
     <RepositoryUrl>https://github.com/FoolRunning/UnicodeHelper</RepositoryUrl>
     <RepositoryType></RepositoryType>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageReadmeFile>Package README.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/FoolRunning/UnicodeHelper</PackageProjectUrl>
     <SignAssembly>False</SignAssembly>
     <DelaySign>False</DelaySign>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -35,7 +36,7 @@
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
-    <None Include="..\README.md">
+    <None Include="..\Package\Package README.md">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>

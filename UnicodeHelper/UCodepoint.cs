@@ -30,9 +30,11 @@ namespace UnicodeHelper
         /// Creates a <see cref="UCodepoint"/> from the specified hexadecimal string. The string may
         /// contain the hex specifier prefix ("0x").
         /// </summary>
-        public static UCodepoint FromHexStr(string hexStr)
+        public static UCodepoint FromHexStr(string hexStr, bool allowLeadingTrailingWhitespace = true)
         {
-            return CreateChecked(int.Parse(hexStr, NumberStyles.AllowHexSpecifier | NumberStyles.HexNumber));
+            int codepoint = int.Parse(hexStr,
+                allowLeadingTrailingWhitespace ? NumberStyles.HexNumber : NumberStyles.AllowHexSpecifier);
+            return CreateChecked(codepoint);
         }
 
         /// <summary>
@@ -131,6 +133,30 @@ namespace UnicodeHelper
         //{
         //    return UnicodeProperties.GetProps(uc);
         //}
+
+        /// <summary>
+        /// Determines if the specified Unicode codepoint is a high or low surrogate.
+        /// </summary>
+        public static bool IsSurrogate(UCodepoint uc)
+        {
+            return uc >= 0xD800 && uc <= 0xDFFF;
+        }
+
+        /// <summary>
+        /// Determines if the specified Unicode codepoint is a high surrogate.
+        /// </summary>
+        public static bool IsHighSurrogate(UCodepoint uc)
+        {
+            return uc >= 0xD800 && uc <= 0xDBFF;
+        }
+
+        /// <summary>
+        /// Determines if the specified Unicode codepoint is a low surrogate.
+        /// </summary>
+        public static bool IsLowSurrogate(UCodepoint uc)
+        {
+            return uc >= 0xDC00 && uc <= 0xDFFF;
+        }
 
         /// <summary>
         /// Determines if the specified codepoint belongs to the Unicode category Control (Cc).
@@ -311,7 +337,7 @@ namespace UnicodeHelper
         /// </summary>
         public override string ToString()
         {
-            return char.ConvertFromUtf32(_value);
+            return _value <= 0xFFFF ? ((char)_value).ToString() : char.ConvertFromUtf32(_value);
         }
         #endregion
 

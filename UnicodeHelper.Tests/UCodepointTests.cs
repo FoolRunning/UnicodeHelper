@@ -217,6 +217,72 @@ namespace UnicodeHelper
         }
         #endregion
 
+        #region IsSurrogate tests
+        private static IEnumerable<object[]> IsSurrogateTestData =>
+        [
+            [(UCodepoint)0xD7FF, false],
+            [(UCodepoint)0xD800, true],
+            [(UCodepoint)0xDB7F, true],
+            [(UCodepoint)0xDB80, true],
+            [(UCodepoint)0xDBFF, true],
+            [(UCodepoint)0xDC00, true],
+            [(UCodepoint)0xDFFF, true],
+            [(UCodepoint)0xE000, false],
+            [(UCodepoint)0x16E65, false]
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(IsSurrogateTestData))]
+        public void IsSurrogate(UCodepoint uc, bool expectedResult)
+        {
+            Assert.AreEqual(expectedResult, UCodepoint.IsSurrogate(uc));
+        }
+        #endregion
+
+        #region IsHighSurrogate tests
+        private static IEnumerable<object[]> IsHighSurrogateTestData =>
+        [
+            [(UCodepoint)0xD7FF, false],
+            [(UCodepoint)0xD800, true],
+            [(UCodepoint)0xDB7F, true],
+            [(UCodepoint)0xDB80, true],
+            [(UCodepoint)0xDBFF, true],
+            [(UCodepoint)0xDC00, false],
+            [(UCodepoint)0xDFFF, false],
+            [(UCodepoint)0xE000, false],
+            [(UCodepoint)0x16E65, false]
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(IsHighSurrogateTestData))]
+        public void IsHighSurrogate(UCodepoint uc, bool expectedResult)
+        {
+            Assert.AreEqual(expectedResult, UCodepoint.IsHighSurrogate(uc));
+        }
+        #endregion
+
+        #region IsLowSurrogate tests
+        private static IEnumerable<object[]> IsLowSurrogateTestData =>
+        [
+            [(UCodepoint)0xD7FF, false],
+            [(UCodepoint)0xD800, false],
+            [(UCodepoint)0xDB7F, false],
+            [(UCodepoint)0xDB80, false],
+            [(UCodepoint)0xDBFF, false],
+            [(UCodepoint)0xDC00, true],
+            [(UCodepoint)0xDFFF, true],
+            [(UCodepoint)0xE000, false],
+            [(UCodepoint)0x16E65, false]
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(IsLowSurrogateTestData))]
+        public void IsLowSurrogate(UCodepoint uc, bool expectedResult)
+        {
+            Assert.AreEqual(expectedResult, UCodepoint.IsLowSurrogate(uc));
+        }
+        #endregion
+
         #region IsControl tests
         private static IEnumerable<object[]> IsControlTestData =>
         [
