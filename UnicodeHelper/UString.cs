@@ -454,13 +454,11 @@ namespace UnicodeHelper
 
         public int IndexOf(UString value)
         {
-            // TODO: Write tests for this method
             return IndexOf(value, 0, Length);
         }
 
         public int IndexOf(UString value, int startIndex)
         {
-            // TODO: Write tests for this method
             return IndexOf(value, startIndex, Length - startIndex);
         }
 
