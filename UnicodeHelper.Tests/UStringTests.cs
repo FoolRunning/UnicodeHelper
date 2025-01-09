@@ -50,18 +50,17 @@
         [DynamicData(nameof(EqualsTestData))]
         public void Equals(string string1, string string2, bool expectedResult)
         {
-            const string pre = "prefix";
-            UString us1 = new(pre + string1);
-            us1 = us1.SubString(pre.Length);
+            // Test making sure that a substring results in the correct result
+            UString us1 = CreateTestSubstring(string1);
             UString us2 = new(string2);
 
             Assert.AreEqual(expectedResult, us1.Equals(us2), "Equal method failed");
             Assert.AreEqual(expectedResult, us1 == us2, "Equal operator failed");
             Assert.AreEqual(!expectedResult, us1 != us2, "NotEqual operator failed");
 
+            // Test making sure that a substring results in the correct result
             us1 = new(string1);
-            us2 = new(pre + string2);
-            us2 = us2.SubString(pre.Length);
+            us2 = CreateTestSubstring(string2);
 
             Assert.AreEqual(expectedResult, us1.Equals(us2), "Equal method failed");
             Assert.AreEqual(expectedResult, us1 == us2, "Equal operator failed");
@@ -150,12 +149,11 @@
         [DynamicData(nameof(ToUpperInvariantTestData))]
         public void ToUpperInvariant(string testString, string expectedResult)
         {
-            const string pre = "prefix";
             UString us = new(testString);
             Assert.AreEqual(new UString(expectedResult), us.ToUpperInvariant());
 
-            us = new(pre + testString);
-            us = us.SubString(pre.Length); // Test making sure that a substring results in the correct result
+            // Test making sure that a substring results in the correct result
+            us = CreateTestSubstring(testString);
             Assert.AreEqual(new UString(expectedResult), us.ToUpperInvariant());
         }
         #endregion
@@ -174,12 +172,11 @@
         [DynamicData(nameof(ToLowerInvariantTestData))]
         public void ToLowerInvariant(string testString, string expectedResult)
         {
-            const string pre = "prefix";
             UString us = new(testString);
             Assert.AreEqual(new UString(expectedResult), us.ToLowerInvariant());
 
-            us = new(pre + testString);
-            us = us.SubString(pre.Length); // Test making sure that a substring results in the correct result
+            // Test making sure that a substring results in the correct result
+            us = CreateTestSubstring(testString);
             Assert.AreEqual(new UString(expectedResult), us.ToLowerInvariant());
         }
         #endregion
@@ -197,13 +194,12 @@
         [DynamicData(nameof(ToCodepointArrayTestData))]
         public void ToCodepointArray(string testString, params string[] expectedResult)
         {
-            const string pre = "prefix";
             UString us = new(testString);
             UCodepoint[] expectedArray = expectedResult.Select(s => UCodepoint.ReadFromStr(s, 0)).ToArray();
             Assert.That.SequenceEqual(expectedArray, us.ToCodepointArray());
 
-            us = new(pre + testString);
-            us = us.SubString(pre.Length); // Test making sure that a substring results in the correct result
+            // Test making sure that a substring results in the correct result
+            us = CreateTestSubstring(testString);
             expectedArray = expectedResult.Select(s => UCodepoint.ReadFromStr(s, 0)).ToArray();
             Assert.That.SequenceEqual(expectedArray, us.ToCodepointArray());
         }
@@ -225,12 +221,11 @@
         [DynamicData(nameof(EnumeratorTestData))]
         public void Enumerator(string testString, params UCodepoint[] expectedResult)
         {
-            const string pre = "prefix";
             UString us = new(testString);
             Assert.That.SequenceEqual(expectedResult, us);
 
-            us = new(pre + testString);
-            us = us.SubString(pre.Length); // Test making sure that a substring results in the correct result
+            // Test making sure that a substring results in the correct result
+            us = CreateTestSubstring(testString);
             Assert.That.SequenceEqual(expectedResult, us);
         }
         #endregion
@@ -275,12 +270,11 @@
         [DynamicData(nameof(UCodepointIndexOfTestData))]
         public void IndexOf_UCodepoint(string testString, UCodepoint codePoint, int start, int count, int expectedResult)
         {
-            const string pre = "prefix";
             UString us = new(testString);
             Assert.AreEqual(expectedResult, us.IndexOf(codePoint, start, count));
 
-            us = new(pre + testString);
-            us = us.SubString(pre.Length); // Test making sure that a substring results in the correct result
+            // Test making sure that a substring results in the correct result
+            us = CreateTestSubstring(testString);
             Assert.AreEqual(expectedResult, us.IndexOf(codePoint, start, count));
         }
         #endregion
@@ -327,13 +321,238 @@
         public void LastIndexOf_UCodepoint(string testString, UCodepoint codePoint, 
             int start, int count, int expectedResult)
         {
-            const string pre = "prefix";
             UString us = new(testString);
             Assert.AreEqual(expectedResult, us.LastIndexOf(codePoint, start, count));
 
-            us = new(pre + testString);
-            us = us.SubString(pre.Length); // Test making sure that a substring results in the correct result
+            // Test making sure that a substring results in the correct result
+            us = CreateTestSubstring(testString);
             Assert.AreEqual(expectedResult, us.LastIndexOf(codePoint, start, count));
+        }
+        #endregion
+
+        #region IsNullOrEmpty tests
+        private static IEnumerable<object?[]> IsNullOrEmptyTestData =>
+        [
+            [null, true],
+            ["", true],
+            [" ", false],
+            ["\r\n", false],
+            ["a", false],
+            ["العربية", false],
+            ["😁🤔😮", false]
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(IsNullOrEmptyTestData))]
+        public void IsNullOrEmpty(string? str, bool expectedResult)
+        {
+            UString? us = str != null ? new UString(str) : null;
+            Assert.AreEqual(expectedResult, UString.IsNullOrEmpty(us));
+        }
+        #endregion
+
+        #region IsNullOrWhitespace tests
+        private static IEnumerable<object?[]> IsNullOrWhitespaceTestData =>
+        [
+            [null, true],
+            ["", true],
+            [" ", true],
+            ["\r\n", true],
+            ["\u00A0\u2002\u202F\u3000", true],
+            ["a", false],
+            ["العربية", false],
+            ["😁🤔😮", false]
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(IsNullOrWhitespaceTestData))]
+        public void IsNullOrWhitespace(string? str, bool expectedResult)
+        {
+            UString? us = str != null ? new UString(str) : null;
+            Assert.AreEqual(expectedResult, UString.IsNullOrWhitespace(us));
+        }
+        #endregion
+
+        #region Concat tests
+        private static IEnumerable<object?[]> ConcatStringPlusCodepointTestData =>
+        [
+            [null, (UCodepoint)' ', " "],
+            ["", (UCodepoint)' ', " "],
+            ["This is\r\na test!", (UCodepoint)'ع', "This is\r\na test!ع"],
+            ["العربي", (UCodepoint)'ة', "العربية"],
+            ["😁🤔", UCodepoint.ReadFromStr("😮", 0), "😁🤔😮"]
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(ConcatStringPlusCodepointTestData))]
+        public void Concat_StringPlusCodepoint(string? testString, UCodepoint toConcat, string expectedResults)
+        {
+            UString? us = testString != null ? new UString(testString) : null;
+            UString expectedUs = new(expectedResults);
+            Assert.AreEqual(UString.Concat(us, toConcat), expectedUs);
+            Assert.AreEqual(us + toConcat, expectedUs);
+
+            // Test making sure that a substring results in the correct result
+            us = CreateTestSubstring(testString);
+            Assert.AreEqual(UString.Concat(us, toConcat), expectedUs);
+            Assert.AreEqual(us + toConcat, expectedUs);
+        }
+
+        private static IEnumerable<object?[]> ConcatCodepointPlusStringTestData =>
+        [
+            [null, (UCodepoint)' ', " "],
+            ["", (UCodepoint)' ', " "],
+            ["This is\r\na test!", (UCodepoint)'ع', "عThis is\r\na test!"],
+            ["العربي", (UCodepoint)'ة', "ةالعربي"],
+            ["😁🤔", UCodepoint.ReadFromStr("😮", 0), "😮😁🤔"]
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(ConcatCodepointPlusStringTestData))]
+        public void Concat_CodepointPlusString(string? testString, UCodepoint toConcat, string expectedResults)
+        {
+            UString? us = testString != null ? new UString(testString) : null;
+            UString expectedUs = new(expectedResults);
+            Assert.AreEqual(UString.Concat(toConcat, us), expectedUs);
+            Assert.AreEqual(toConcat + us, expectedUs);
+
+            // Test making sure that a substring results in the correct result
+            us = CreateTestSubstring(testString);
+            Assert.AreEqual(UString.Concat(toConcat, us), expectedUs);
+            Assert.AreEqual(toConcat + us, expectedUs);
+        }
+
+        private static IEnumerable<object?[]> ConcatStringPlusStringTestData =>
+        [
+            [null, "", ""],
+            ["", null, ""],
+            [null, null, ""],
+            ["", "", ""],
+            ["", "ACB", "ACB"],
+            ["This is\r", "\na test!", "This is\r\na test!"],
+            ["العر", "بية", "العربية"],
+            ["😁🤔", "🤔😮😁", "😁🤔🤔😮😁"]
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(ConcatStringPlusStringTestData))]
+        public void Concat_StringPlusString(string? str1, string? str2, string expectedResults)
+        {
+            UString? us1 = str1 != null ? new UString(str1) : null;
+            UString? us2 = str2 != null ? new UString(str2) : null;
+            UString expectedUs = new(expectedResults);
+            Assert.AreEqual(UString.Concat(us1, us2), expectedUs);
+            Assert.AreEqual(us1 + us2, expectedUs);
+
+            // Test making sure that a substring results in the correct result
+            us1 = CreateTestSubstring(str1);
+            us2 = CreateTestSubstring(str2);
+            Assert.AreEqual(UString.Concat(us1, us2), expectedUs);
+            Assert.AreEqual(us1 + us2, expectedUs);
+        }
+
+        private static IEnumerable<object?[]> ConcatStringPlusStringStringTestData =>
+        [
+            [null, "", "", ""],
+            ["", null, "", ""],
+            ["", "", null, ""],
+            [null, null, null, ""],
+            ["", "", "", ""],
+            ["", "ACB", "", "ACB"],
+            ["This ", "is\r", "\na test!", "This is\r\na test!"],
+            ["العر", "ب", "ية", "العربية"],
+            ["😁🤔", "🤔", "😮😁", "😁🤔🤔😮😁"]
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(ConcatStringPlusStringStringTestData))]
+        public void Concat_StringPlusStringString(string? str1, string? str2, string? str3, string expectedResults)
+        {
+            UString? us1 = str1 != null ? new UString(str1) : null;
+            UString? us2 = str2 != null ? new UString(str2) : null;
+            UString? us3 = str3 != null ? new UString(str3) : null;
+            UString expectedUs = new(expectedResults);
+            Assert.AreEqual(UString.Concat(us1, us2, us3), expectedUs);
+            Assert.AreEqual(us1 + us2 + us3, expectedUs);
+
+            // Test making sure that a substring results in the correct result
+            us1 = CreateTestSubstring(str1);
+            us2 = CreateTestSubstring(str2);
+            us3 = CreateTestSubstring(str3);
+            Assert.AreEqual(UString.Concat(us1, us2, us3), expectedUs);
+            Assert.AreEqual(us1 + us2 + us3, expectedUs);
+        }
+
+        private static IEnumerable<object?[]> ConcatStringPlusStringStringStringTestData =>
+        [
+            [null, "", "", "", ""],
+            ["", null, "", "", ""],
+            ["", "", null, "", ""],
+            ["", "", "", null, ""],
+            [null, null, null, null, ""],
+            ["", "", "", "", ""],
+            ["", "", "ACB", "", "ACB"],
+            ["This ", "is\r", "\na test", "!", "This is\r\na test!"],
+            ["العر", "ب", "ي", "ة", "العربية"],
+            ["😁", "🤔", "🤔", "😮😁", "😁🤔🤔😮😁"]
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(ConcatStringPlusStringStringStringTestData))]
+        public void Concat_StringPlusStringStringString(string? str1, string? str2, string? str3, string? str4, string expectedResults)
+        {
+            UString? us1 = str1 != null ? new UString(str1) : null;
+            UString? us2 = str2 != null ? new UString(str2) : null;
+            UString? us3 = str3 != null ? new UString(str3) : null;
+            UString? us4 = str4 != null ? new UString(str4) : null;
+            UString expectedUs = new(expectedResults);
+            Assert.AreEqual(UString.Concat(us1, us2, us3, us4), expectedUs);
+            Assert.AreEqual(us1 + us2 + us3 + us4, expectedUs);
+
+            // Test making sure that a substring results in the correct result
+            us1 = CreateTestSubstring(str1);
+            us2 = CreateTestSubstring(str2);
+            us3 = CreateTestSubstring(str3);
+            us4 = CreateTestSubstring(str4);
+            Assert.AreEqual(UString.Concat(us1, us2, us3, us4), expectedUs);
+            Assert.AreEqual(us1 + us2 + us3 + us4, expectedUs);
+        }
+
+        private static IEnumerable<object[]> ConcatStringListTestData =>
+        [
+            [Array.Empty<string?>(), ""],
+            [new string?[] { null }, ""],
+            [new string?[] { null, null, null, null, null, null }, ""],
+            [new [] { "", "", "", "", "", "", "", "" }, ""],
+            [new [] { "A", "", "", "", "", "V", "", "" }, "AV"],
+            [new [] { "Th", "is ", "is\r", "\na ", "test", "!" }, "This is\r\na test!"],
+            [new [] { "العر", "ب", "ي", "ة" }, "العربية"],
+            [new [] { "😁", "🤔🤔", "😮😁" }, "😁🤔🤔😮😁"]
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(ConcatStringListTestData))]
+        public void Concat_StringList(string?[] strings, string expectedResults)
+        {
+            UString expectedUs = new(expectedResults);
+            Assert.AreEqual(UString.Concat(strings.Select(s => s != null ? new UString(s) : null).ToArray()), 
+                expectedUs);
+
+            // Test making sure that a substring results in the correct result
+            Assert.AreEqual(UString.Concat(strings.Select(CreateTestSubstring).ToArray()), expectedUs);
+        }
+        #endregion
+
+        #region Private helper methods
+        private static UString CreateTestSubstring(string? str)
+        {
+            const string pre = "prefix";
+            const string suff = "suffix";
+
+            str ??= string.Empty;
+
+            UString us = new(pre + str + suff);
+            return us.SubString(pre.Length, us.Length - pre.Length - suff.Length);
         }
         #endregion
     }

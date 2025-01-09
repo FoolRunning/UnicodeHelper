@@ -20,6 +20,11 @@ namespace UnicodeHelper
         IComparable<UString>
     {
         #region Data fields
+        /// <summary>
+        /// Represents an empty, zero-length Unicode string
+        /// </summary>
+        public static readonly UString Empty = new UString(0, 0, Array.Empty<UCodepoint>());
+
         private readonly UCodepoint[] _codepoints;
         /// <summary>Index of the codepoint in the array where this string starts (for a substring)</summary>
         private readonly int _startIndex;
@@ -161,7 +166,7 @@ namespace UnicodeHelper
         /// <inheritdoc />
         public IEnumerator<UCodepoint> GetEnumerator()
         {
-            return new UCodepointEnumerator(this);
+            return new UStringEnumerator(this);
         }
         
         IEnumerator IEnumerable.GetEnumerator()
@@ -201,50 +206,173 @@ namespace UnicodeHelper
         }
         #endregion
 
-        #region Other public methods
-
-        public static UString Concat(UCodepoint uc, UString us)
+        #region Public static methods
+        /// <summary>
+        /// Gets whether the specified Unicode string is null or empty
+        /// </summary>
+        public static bool IsNullOrEmpty(UString us)
         {
-            // TODO: Write tests for this method
-            throw new NotImplementedException();
+            return us == null || us.Length == 0;
         }
 
+        /// <summary>
+        /// Gets whether the specified Unicode string is null, empty, or contains only whitespace
+        /// </summary>
+        public static bool IsNullOrWhitespace(UString us)
+        {
+            if (IsNullOrEmpty(us))
+                return true;
+
+            int start = us._startIndex;
+            int end = start + us.Length;
+            for (int i = start; i < end; i++)
+            {
+                if (!UCodepoint.IsWhiteSpace(us._codepoints[i]))
+                    return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Creates a new Unicode string by concatenating the specified Unicode string and Unicode codepoint together
+        /// </summary>
         public static UString Concat(UString us, UCodepoint uc)
         {
-            // TODO: Write tests for this method
-            throw new NotImplementedException();
+            if (us == null)
+                us = Empty;
+
+            UCodepoint[] codepoints = new UCodepoint[us.Length + 1];
+            Array.Copy(us._codepoints, us._startIndex, codepoints, 0, us.Length);
+            codepoints[codepoints.Length - 1] = uc;
+            return new UString(0, codepoints.Length, codepoints);
         }
 
+        /// <summary>
+        /// Creates a new Unicode string by concatenating the specified Unicode codepoint and Unicode string together
+        /// </summary>
+        public static UString Concat(UCodepoint uc, UString us)
+        {
+            if (us == null)
+                us = Empty;
+
+            UCodepoint[] codepoints = new UCodepoint[us.Length + 1];
+            codepoints[0] = uc;
+            Array.Copy(us._codepoints, us._startIndex, codepoints, 1, us.Length);
+            return new UString(0, codepoints.Length, codepoints);
+        }
+
+        /// <summary>
+        /// Creates a new Unicode string by concatenating the specified two Unicode strings together
+        /// </summary>
         public static UString Concat(UString us1, UString us2)
         {
-            // TODO: Write tests for this method
-            throw new NotImplementedException();
+            if (us1 == null)
+                us1 = Empty;
+
+            if (us2 == null)
+                us2 = Empty;
+
+            if (us1.Length == 0 && us2.Length == 0)
+                return Empty;
+
+            UCodepoint[] codepoints = new UCodepoint[us1.Length + us2.Length];
+            Array.Copy(us1._codepoints, us1._startIndex, codepoints, 0, us1.Length);
+            Array.Copy(us2._codepoints, us2._startIndex, codepoints, us1.Length, us2.Length);
+            return new UString(0, codepoints.Length, codepoints);
         }
 
+        /// <summary>
+        /// Creates a new Unicode string by concatenating the specified three Unicode strings together
+        /// </summary>
         public static UString Concat(UString us1, UString us2, UString us3)
         {
-            // TODO: Write tests for this method
-            throw new NotImplementedException();
+            if (us1 == null)
+                us1 = Empty;
+
+            if (us2 == null)
+                us2 = Empty;
+
+            if (us3 == null)
+                us3 = Empty;
+
+            if (us1.Length == 0 && us2.Length == 0 && us3.Length == 0)
+                return Empty;
+
+            UCodepoint[] codepoints = new UCodepoint[us1.Length + us2.Length + us3.Length];
+            Array.Copy(us1._codepoints, us1._startIndex, codepoints, 0, us1.Length);
+            Array.Copy(us2._codepoints, us2._startIndex, codepoints, us1.Length, us2.Length);
+            Array.Copy(us3._codepoints, us3._startIndex, codepoints, us1.Length + us2.Length, us3.Length);
+            return new UString(0, codepoints.Length, codepoints);
         }
 
+        /// <summary>
+        /// Creates a new Unicode string by concatenating the specified four Unicode strings together
+        /// </summary>
         public static UString Concat(UString us1, UString us2, UString us3, UString us4)
         {
-            // TODO: Write tests for this method
-            throw new NotImplementedException();
+            if (us1 == null)
+                us1 = Empty;
+
+            if (us2 == null)
+                us2 = Empty;
+
+            if (us3 == null)
+                us3 = Empty;
+
+            if (us4 == null)
+                us4 = Empty;
+
+            if (us1.Length == 0 && us2.Length == 0 && us3.Length == 0 && us4.Length == 0)
+                return Empty;
+
+            UCodepoint[] codepoints = new UCodepoint[us1.Length + us2.Length + us3.Length + us4.Length];
+            Array.Copy(us1._codepoints, us1._startIndex, codepoints, 0, us1.Length);
+            Array.Copy(us2._codepoints, us2._startIndex, codepoints, us1.Length, us2.Length);
+            Array.Copy(us3._codepoints, us3._startIndex, codepoints, us1.Length + us2.Length, us3.Length);
+            Array.Copy(us4._codepoints, us4._startIndex, codepoints, us1.Length + us2.Length + us3.Length, us4.Length);
+            return new UString(0, codepoints.Length, codepoints);
         }
 
+        /// <summary>
+        /// Creates a new Unicode string by concatenating the specified Unicode strings together
+        /// </summary>
+        [SuppressMessage("ReSharper", "ForCanBeConvertedToForeach")]
+        [SuppressMessage("ReSharper", "LoopCanBeConvertedToQuery")]
         public static UString Concat(params UString[] uStrings)
         {
-            // TODO: Write tests for this method
-            throw new NotImplementedException();
-        }
+            if (uStrings == null)
+                throw new ArgumentNullException(nameof(uStrings));
 
+            int totalLength = 0;
+            for (int i = 0; i < uStrings.Length; i++)
+            {
+                UString us = uStrings[i];
+                if (us != null)
+                    totalLength += us.Length;
+            }
+                
+            UCodepoint[] codepoints = new UCodepoint[totalLength];
+            int startIndex = 0;
+            for (int i = 0; i < uStrings.Length; i++)
+            {
+                UString us = uStrings[i];
+                if (IsNullOrEmpty(us)) 
+                    continue;
+                
+                Array.Copy(us._codepoints, us._startIndex, codepoints, startIndex, us.Length);
+                startIndex += us.Length;
+            }
+            return new UString(0, codepoints.Length, codepoints);
+        }
+        #endregion
+
+        #region Other public methods
         /// <summary>
         /// Finds the zero-based index of the first occurrence of the specified Unicode codepoint in this string.
         /// </summary>
         public int IndexOf(UCodepoint value)
         {
-            // TODO: Write tests for this method
             return IndexOf(value, 0, Length);
         }
 
@@ -254,7 +382,6 @@ namespace UnicodeHelper
         /// </summary>
         public int IndexOf(UCodepoint value, int startIndex)
         {
-            // TODO: Write tests for this method
             return IndexOf(value, startIndex, Length - startIndex);
         }
 
@@ -287,7 +414,6 @@ namespace UnicodeHelper
         /// </summary>
         public int LastIndexOf(UCodepoint value)
         {
-            // TODO: Write tests for this method
             return LastIndexOf(value, Length - 1, Length);
         }
 
@@ -298,7 +424,6 @@ namespace UnicodeHelper
         /// </summary>
         public int LastIndexOf(UCodepoint value, int startIndex)
         {
-            // TODO: Write tests for this method
             return LastIndexOf(value, startIndex, startIndex + 1);
         }
 
@@ -341,6 +466,27 @@ namespace UnicodeHelper
 
         public int IndexOf(UString value, int startIndex, int count)
         {
+            //if (value == null)
+            //    throw new ArgumentNullException(nameof(value));
+            //if (startIndex < 0)
+            //    throw new ArgumentOutOfRangeException(nameof(startIndex), "startIndex is less than zero");
+            //if (count < 0)
+            //    throw new ArgumentOutOfRangeException(nameof(count), "count is less than zero");
+            //if (startIndex + count > Length)
+            //    throw new ArgumentException("StartIndex and count must reside in the string");
+
+            ////if (startIndex + value.Length)
+
+            //int start = _startIndex + startIndex;
+            //int end = start + count;
+            //UCodepoint firstCodepoint = value.Length > 0 ? value[0] : UCodepoint.MinValue;
+            //for (int i = start; i < end; i++)
+            //{
+            //    if (_codepoints[i] == firstCodepoint)
+            //        return i - _startIndex;
+            //}
+
+            //return -1;
             // TODO: Write tests for this method
             throw new NotImplementedException();
         }
@@ -361,13 +507,31 @@ namespace UnicodeHelper
             throw new NotImplementedException();
         }
 
+        public bool StartsWith(UCodepoint value, bool ignoreCase = false)
+        {
+            // TODO: Write tests for this method
+            throw new NotImplementedException();
+        }
+
         public bool StartsWith(UString value, bool ignoreCase = false)
         {
             // TODO: Write tests for this method
             throw new NotImplementedException();
         }
 
+        public bool EndsWith(UCodepoint value, bool ignoreCase = false)
+        {
+            // TODO: Write tests for this method
+            throw new NotImplementedException();
+        }
+
         public bool EndsWith(UString value, bool ignoreCase = false)
+        {
+            // TODO: Write tests for this method
+            throw new NotImplementedException();
+        }
+
+        public bool Contains(UCodepoint value, bool ignoreCase = false)
         {
             // TODO: Write tests for this method
             throw new NotImplementedException();
@@ -391,6 +555,10 @@ namespace UnicodeHelper
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Gets copy of this Unicode string converted to uppercase using the
+        /// casing rules of the invariant culture
+        /// </summary>
         public UString ToUpperInvariant()
         {
             // TODO: Handle complex uppercasing rules
@@ -402,6 +570,10 @@ namespace UnicodeHelper
             return new UString(0, result.Length, result);
         }
 
+        /// <summary>
+        /// Gets copy of this Unicode string converted to lowercase using the
+        /// casing rules of the invariant culture
+        /// </summary>
         public UString ToLowerInvariant()
         {
             // TODO: Handle complex lowercasing rules
@@ -413,6 +585,9 @@ namespace UnicodeHelper
             return new UString(0, result.Length, result);
         }
 
+        /// <summary>
+        /// Gets this Unicode string as an array of Unicode codepoints
+        /// </summary>
         public UCodepoint[] ToCodepointArray()
         {
             UCodepoint[] result = new UCodepoint[Length];
@@ -423,11 +598,19 @@ namespace UnicodeHelper
             return result;
         }
 
+        /// <summary>
+        /// Retrieves a portion from this Unicode string.
+        /// The portion starts at a specified character and continues to the end of the string.
+        /// </summary>
         public UString SubString(int start)
         {
             return SubString(start, Length - start);
         }
 
+        /// <summary>
+        /// Retrieves a portion from this Unicode string.
+        /// The portion starts at a specified character and has the specified length.
+        /// </summary>
         public UString SubString(int start, int length)
         {
             if (start < 0)
@@ -538,14 +721,14 @@ namespace UnicodeHelper
         }
         #endregion
 
-        #region UCodepointEnumerator class
-        private sealed class UCodepointEnumerator : IEnumerator<UCodepoint>
+        #region UStringEnumerator class
+        private sealed class UStringEnumerator : IEnumerator<UCodepoint>
         {
             private UString _str;
             private int _index = -1;
             private UCodepoint _current;
 
-            public UCodepointEnumerator(UString str)
+            public UStringEnumerator(UString str)
             {
                 _str = str;
             }
