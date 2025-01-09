@@ -64,7 +64,7 @@ foreach (UCodepoint uc in dotNetString.Codepoints())
 	Console.WriteLine(uc);
 /* Result:
 H
-!
+i
 
 😁
 !
