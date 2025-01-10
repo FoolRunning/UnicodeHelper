@@ -22,7 +22,7 @@ namespace UnicodeHelper
         #region DotNetStringEnumerator class
         private sealed class DotNetStringEnumerator : IEnumerator<UCodepoint>, IEnumerable<UCodepoint>
         {
-            private string _dotNetString;
+            private readonly string _dotNetString;
             private int _index = -1;
             private UCodepoint _current;
 
@@ -33,9 +33,7 @@ namespace UnicodeHelper
 
             public void Dispose()
             {
-                if (_dotNetString != null)
-                    _index = _dotNetString.Length;
-                _dotNetString = null;
+                _index = _dotNetString.Length;
             }
 
             public UCodepoint Current
@@ -54,10 +52,7 @@ namespace UnicodeHelper
 
             public bool MoveNext()
             {
-                _index++;
-                if (_current > 0xFFFF)
-                    _index++;
-
+                _index += (_current <= 0xFFFF) ? 1 : 2;
                 if (_index >= _dotNetString.Length)
                     return false;
 
@@ -73,6 +68,7 @@ namespace UnicodeHelper
 
             public IEnumerator<UCodepoint> GetEnumerator()
             {
+                Reset();
                 return this;
             }
 
