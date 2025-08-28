@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 
 namespace UnicodeHelper
 {
@@ -645,6 +646,7 @@ namespace UnicodeHelper
         }
 
         [TestMethod]
+        [SuppressMessage("ReSharper", "CompareOfFloatsByEqualityOperator")]
         public void GetNumericValue_CompareWithDotNet()
         {
             for (char c = '\u0000'; c < 0xFFFF; c++)

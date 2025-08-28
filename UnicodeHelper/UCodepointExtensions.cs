@@ -54,5 +54,13 @@ namespace UnicodeHelper
 
             return ((int)uc).ToString(formatString);
         }
+
+        /// <summary>
+        /// Converts this codepoint to a <see cref="UString"/>
+        /// </summary>
+        public static UString ToUString(this UCodepoint uc)
+        {
+            return new UString(uc);
+        }
     }
 }

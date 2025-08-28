@@ -389,6 +389,101 @@ namespace UnicodeHelper
         {
             return uc._value != v;
         }
+        /// <summary>
+        /// Determines if the a <see cref="UCodepoint"/> is less than an unsigned short integer value
+        /// </summary>
+        public static bool operator <(UCodepoint uc, ushort v)
+        {
+            return uc._value < v;
+        }
+
+        /// <summary>
+        /// Determines if the a <see cref="UCodepoint"/> is less than or equal to an unsigned short integer value
+        /// </summary>
+        public static bool operator <=(UCodepoint uc, ushort v)
+        {
+            return uc._value <= v;
+        }
+
+        /// <summary>
+        /// Determines if the a <see cref="UCodepoint"/> is greater than an unsigned short integer value
+        /// </summary>
+        public static bool operator >(UCodepoint uc, ushort v)
+        {
+            return uc._value > v;
+        }
+
+        /// <summary>
+        /// Determines if the a <see cref="UCodepoint"/> is greater than or equal to an unsigned short integer value
+        /// </summary>
+        public static bool operator >=(UCodepoint uc, ushort v)
+        {
+            return uc._value >= v;
+        }
+
+        /// <summary>
+        /// Determines if the a <see cref="UCodepoint"/> is equal to an unsigned short integer value
+        /// </summary>
+        public static bool operator ==(UCodepoint uc, ushort v)
+        {
+            return uc._value == v;
+        }
+        
+        /// <summary>
+        /// Determines if the a <see cref="UCodepoint"/> is less than a short integer value
+        /// </summary>
+        public static bool operator <(UCodepoint uc, short v)
+        {
+            return uc._value < v;
+        }
+
+        /// <summary>
+        /// Determines if the a <see cref="UCodepoint"/> is less than or equal to a short integer value
+        /// </summary>
+        public static bool operator <=(UCodepoint uc, short v)
+        {
+            return uc._value <= v;
+        }
+
+        /// <summary>
+        /// Determines if the a <see cref="UCodepoint"/> is greater than a short integer value
+        /// </summary>
+        public static bool operator >(UCodepoint uc, short v)
+        {
+            return uc._value > v;
+        }
+
+        /// <summary>
+        /// Determines if the a <see cref="UCodepoint"/> is greater than or equal to a short integer value
+        /// </summary>
+        public static bool operator >=(UCodepoint uc, short v)
+        {
+            return uc._value >= v;
+        }
+
+        /// <summary>
+        /// Determines if the a <see cref="UCodepoint"/> is equal to a short integer value
+        /// </summary>
+        public static bool operator ==(UCodepoint uc, short v)
+        {
+            return uc._value == v;
+        }
+
+        /// <summary>
+        /// Determines if the a <see cref="UCodepoint"/> is not equal to a short integer value
+        /// </summary>
+        public static bool operator !=(UCodepoint uc, short v)
+        {
+            return uc._value != v;
+        }
+
+        /// <summary>
+        /// Determines if the a <see cref="UCodepoint"/> is not equal to an unsigned short value
+        /// </summary>
+        public static bool operator !=(UCodepoint uc, ushort v)
+        {
+            return uc._value != v;
+        }
 
         /// <summary>
         /// Determines if the a <see cref="UCodepoint"/> is less than a .Net character value

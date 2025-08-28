@@ -31,6 +31,30 @@
         }
         #endregion
         
+        #region CharLength tests
+        private static IEnumerable<object[]> CharLengthTestData =>
+        [
+            ["test", 4],
+            ["", 0],
+            ["This is\r\na test!", 16],
+            ["العربية", 7],
+            ["😁🤔😮", 6],
+            ["test😮", 6],
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(CharLengthTestData))]
+        public void CharLength(string str, int expectedResult)
+        {
+            UString us = new(str);
+            Assert.AreEqual(expectedResult, us.CharLength);
+
+            // Test making sure that a substring results in the correct result
+            us = CreateTestSubstring(str);
+            Assert.AreEqual(expectedResult, us.CharLength);
+        }
+        #endregion
+
         #region Equals tests
         private static IEnumerable<object[]> EqualsTestData =>
         [
@@ -540,6 +564,79 @@
 
             // Test making sure that a substring results in the correct result
             Assert.AreEqual(UString.Concat(strings.Select(CreateTestSubstring).ToArray()), expectedUs);
+        }
+        #endregion
+        
+        #region Split tests
+        private static IEnumerable<object?[]> SplitExceptionTestData =>
+        [
+            ["bla", null, 1, typeof(ArgumentException)],
+            ["bla", Array.Empty<UCodepoint>(), 1, typeof(ArgumentException)],
+            ["bla", new UCodepoint[] { ' ' }, -1, typeof(ArgumentOutOfRangeException)],
+            ["bla", new UCodepoint[] { ' ' }, 0, typeof(ArgumentOutOfRangeException)],
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(SplitExceptionTestData))]
+        public void Split_InvalidParameters(string testString, UCodepoint[]? separators, int maxCount, 
+            Type expectedExceptionType)
+        {
+            UString us = new(testString);
+            Assert.That.ThrowsException(expectedExceptionType, () => us.Split(separators, maxCount));
+        }
+        
+        private static IEnumerable<object[]> SplitTestData =>
+        [
+            ["", new UCodepoint[] { ' ' }, int.MaxValue, new[] { "" }],
+            ["", new UCodepoint[] { ' ' }, 1, new[] { "" }],
+            ["This is a test!", new UCodepoint[] { ' ' }, int.MaxValue, new[] { "This", "is", "a", "test!" }],
+            ["This is a test!", new UCodepoint[] { ' ' }, 2, new[] { "This", "is a test!" }],
+            [" This  is a test!  ", new UCodepoint[] { ' ' }, int.MaxValue, new[] { "", "This", "", "is", "a", "test!", "", "" }],
+            ["This is\r\na test!", new UCodepoint[] { ' ' }, int.MaxValue, new[] { "This", "is\r\na", "test!" }],
+            ["This is\r\na test!", new UCodepoint[] { ' ', '\r', '\n' }, int.MaxValue, new[] { "This", "is", "", "a", "test!" }],
+            ["العربية", new UCodepoint[] { ' ' }, int.MaxValue, new[] { "العربية" }],
+            ["😁🤔😮", new[] { UCodepoint.ReadFromStr("🤔", 0)  }, int.MaxValue, new[] { "😁", "😮" }],
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(SplitTestData))]
+        public void Split(string testString, UCodepoint[]? separators, int maxCount, string[] expectedResults)
+        {
+            UString us = new(testString);
+            UString[] expectedUss = expectedResults.Select(er => new UString(er)).ToArray();
+            
+            Assert.That.SequenceEqual(expectedUss, us.Split(separators, maxCount));
+
+            // Test making sure that a substring results in the correct result
+            us = CreateTestSubstring(testString);
+            Assert.That.SequenceEqual(expectedUss, us.Split(separators, maxCount));
+        }
+
+        private static IEnumerable<object[]> SplitIgnoreEmptyTestData =>
+        [
+            ["", new UCodepoint[] { ' ' }, int.MaxValue, new[] { "" }],
+            ["", new UCodepoint[] { ' ' }, 1, new[] { "" }],
+            ["This is a test!", new UCodepoint[] { ' ' }, int.MaxValue, new[] { "This", "is", "a", "test!" }],
+            ["This is a test!", new UCodepoint[] { ' ' }, 2, new[] { "This", "is a test!" }],
+            [" This  is a test!  ", new UCodepoint[] { ' ' }, int.MaxValue, new[] { "This", "is", "a", "test!" }],
+            ["This is\r\na test!", new UCodepoint[] { ' ' }, int.MaxValue, new[] { "This", "is\r\na", "test!" }],
+            ["This is\r\na test!", new UCodepoint[] { ' ', '\r', '\n' }, int.MaxValue, new[] { "This", "is", "a", "test!" }],
+            ["العربية", new UCodepoint[] { ' ' }, int.MaxValue, new[] { "العربية" }],
+            ["😁🤔😮", new[] { UCodepoint.ReadFromStr("🤔", 0)  }, int.MaxValue, new[] { "😁", "😮" }],
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(SplitIgnoreEmptyTestData))]
+        public void Split_IgnoreEmpty(string testString, UCodepoint[]? separators, int maxCount, string[] expectedResults)
+        {
+            UString us = new(testString);
+            UString[] expectedUss = expectedResults.Select(er => new UString(er)).ToArray();
+            
+            Assert.That.SequenceEqual(expectedUss, us.Split(separators, maxCount, StringSplitOptions.RemoveEmptyEntries));
+
+            // Test making sure that a substring results in the correct result
+            us = CreateTestSubstring(testString);
+            Assert.That.SequenceEqual(expectedUss, us.Split(separators, maxCount, StringSplitOptions.RemoveEmptyEntries));
         }
         #endregion
 

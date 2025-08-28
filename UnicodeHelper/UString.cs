@@ -105,6 +105,13 @@ namespace UnicodeHelper
             _startIndex = start;
             Length = length;
         }
+
+        internal UString(UCodepoint uc)
+        {
+            _codepoints = new [] { uc };
+            _startIndex = 0;
+            Length = 1;
+        }
         #endregion
 
         #region Properties
@@ -112,6 +119,21 @@ namespace UnicodeHelper
         /// Gets the number of Unicode codepoints that make up this Unicode string
         /// </summary>
         public int Length { get; }
+
+        /// <summary>
+        /// Gets the number of .Net characters that make up this Unicode string
+        /// </summary>
+        public int CharLength
+        {
+            get
+            {
+                int charCount = 0;
+                int end = _startIndex + Length;
+                for (int i = _startIndex; i < end; i++)
+                    charCount += _codepoints[i] > 0xFFFF ? 2 : 1;
+                return charCount;
+            }
+        }
 
         /// <summary>
         /// Gets the Unicode codepoint at the specified index in this Unicode string
@@ -541,16 +563,56 @@ namespace UnicodeHelper
             throw new NotImplementedException();
         }
 
-        public IEnumerable<UString> Split(params UCodepoint[] separators)
+        /// <summary>
+        /// Splits a Unicode string into substrings that are based on the characters in an array.
+        /// </summary>
+        public IReadOnlyList<UString> Split(params UCodepoint[] separators)
         {
             return Split(separators, int.MaxValue);
         }
 
-        public IEnumerable<UString> Split(UCodepoint[] separators, int maxCount, 
+        /// <summary>
+        /// Splits a Unicode string into a maximum number of substrings based on the characters in an array.
+        /// </summary>
+        public IReadOnlyList<UString> Split(UCodepoint[] separators, int maxCount,
             StringSplitOptions options = StringSplitOptions.None)
         {
-            // TODO: Write tests for this method
-            throw new NotImplementedException();
+            if (separators == null || separators.Length == 0)
+                throw new ArgumentException("Separators cannot be null or empty.", nameof(separators));
+
+            if (maxCount <= 0) 
+                throw new ArgumentOutOfRangeException(nameof(maxCount), "maxCount must be greater than zero.");
+            
+            if (options != StringSplitOptions.None && options != StringSplitOptions.RemoveEmptyEntries)
+                throw new ArgumentException("Unsupported option: " + options, nameof(options));
+
+            int currentSegmentStart = 0;
+            int segmentCount = 0;
+
+            List<UString> result = new List<UString>();
+            for (int i = 0; i < Length; i++)
+            {
+                if (Array.Exists(separators, s => this[i] == s))
+                {
+                    if (options != StringSplitOptions.RemoveEmptyEntries || i > currentSegmentStart)
+                    {
+                        result.Add(SubString(currentSegmentStart, i - currentSegmentStart));
+                        segmentCount++;
+                        
+                        if (segmentCount == maxCount - 1)
+                        {
+                            result.Add(SubString(i + 1));
+                            return result;
+                        }
+                    }
+
+                    currentSegmentStart = i + 1;
+                }
+            }
+
+            if (currentSegmentStart < Length || (options != StringSplitOptions.RemoveEmptyEntries && currentSegmentStart == Length))
+                result.Add(SubString(currentSegmentStart));
+            return result;
         }
 
         /// <summary>
@@ -718,6 +780,11 @@ namespace UnicodeHelper
             return Concat(uc, us);
         }
         #endregion
+        
+        internal void CopyTo(UCodepoint[] array, int arrayIndex)
+        {
+            Array.Copy(_codepoints, _startIndex, array, arrayIndex, Length);
+        }
 
         #region UStringEnumerator class
         private sealed class UStringEnumerator : IEnumerator<UCodepoint>
