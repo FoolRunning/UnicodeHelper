@@ -7,10 +7,10 @@
     <RunAnalyzersDuringLiveAnalysis>False</RunAnalyzersDuringLiveAnalysis>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>Unicode Helper</Title>
-    <Version>0.6.2</Version>
+    <Version>0.7.0</Version>
     <Authors>FoolRunning</Authors>
     <Description>.Net library to get information about Unicode codepoints and to better handle the upper planes (1-16) of Unicode.</Description>
-    <Copyright>© 2024 Tim Steenwyk</Copyright>
+    <Copyright>© 2025 Tim Steenwyk</Copyright>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageTags>unicode;utf-32;codepoint;data;code;point;surrogate pair;character;characters;surrogate;pair;surogate pair;surogate</PackageTags>
     <RepositoryUrl>https://github.com/FoolRunning/UnicodeHelper</RepositoryUrl>
@@ -21,6 +21,9 @@
     <DelaySign>False</DelaySign>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <PackageReleaseNotes>Implemented some UString methods.
+Added some convienence operators to UCodepoint.
+Added the beginnings of a UString builder to aid in creating UString instances.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
