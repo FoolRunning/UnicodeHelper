@@ -639,6 +639,20 @@
             Assert.That.SequenceEqual(expectedUss, us.Split(separators, maxCount, StringSplitOptions.RemoveEmptyEntries));
         }
         #endregion
+        
+        #region ToString tests
+        [TestMethod]
+        [DynamicData(nameof(SubStringTestData))]
+        public void ToString_SubString(string testString, int start, int length, string expectedResult)
+        {
+            UString us = new(testString);
+            Assert.AreEqual(expectedResult, us.ToString(start, length));
+
+            // Test making sure that a substring results in the correct result
+            us = CreateTestSubstring(testString);
+            Assert.AreEqual(expectedResult, us.ToString(start, length));
+        }
+        #endregion
 
         #region Private helper methods
         private static UString CreateTestSubstring(string? str)

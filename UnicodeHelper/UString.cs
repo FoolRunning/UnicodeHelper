@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Text;
 using JetBrains.Annotations;
 
@@ -56,9 +55,13 @@ namespace UnicodeHelper
             if (startIndex + count > codepoints.Count)
                 throw new ArgumentException("startIndex and count must reside in the list");
 
-            // TODO: Since we're making a new array anyway, make an array of the specified subset
-            _codepoints = codepoints.ToArray();
-            _startIndex = startIndex;
+            _codepoints = new UCodepoint[count];
+            int end = startIndex + count;
+            int index = 0;
+            for (int i = startIndex; i < end; i++)
+                _codepoints[index++] = codepoints[i];
+            
+            _startIndex = 0;
             Length = count;
         }
 
@@ -693,6 +696,35 @@ namespace UnicodeHelper
             // TODO: Write tests for this method
             throw new NotImplementedException();
         }
+
+        /// <summary>
+        /// Converts this Unicode string into a standard .Net string from a substring of
+        /// this Unicode string.
+        /// </summary>
+        public string ToString(int start, int length)
+        {
+            if (start < 0)
+                throw new ArgumentOutOfRangeException(nameof(start), "startIndex is less than zero");
+            if (length < 0)
+                throw new ArgumentOutOfRangeException(nameof(length), "length is less than zero");
+            if (start + length > Length)
+                throw new ArgumentException("Start and length must reside in the string");
+
+            StringBuilder result = new StringBuilder(length);
+        
+            int startIndex = _startIndex + start;
+            int end = startIndex + length;
+            for (int i = startIndex; i < end; i++)
+            {
+                UCodepoint uc = _codepoints[i];
+                if (uc <= 0xFFFF)
+                    result.Append((char)uc);
+                else
+                    result.Append(uc.ToString());
+            }
+
+            return result.ToString();
+        }
         #endregion
 
         #region Overrides of Object
@@ -723,19 +755,7 @@ namespace UnicodeHelper
         /// </summary>
         public override string ToString()
         {
-            StringBuilder result = new StringBuilder(Length);
-        
-            int end = _startIndex + Length;
-            for (int i = _startIndex; i < end; i++)
-            {
-                UCodepoint uc = _codepoints[i];
-                if (uc <= 0xFFFF)
-                    result.Append((char)uc);
-                else
-                    result.Append(uc.ToString());
-            }
-
-            return result.ToString();
+            return ToString(0, Length);
         }
         #endregion
 
