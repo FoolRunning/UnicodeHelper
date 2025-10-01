@@ -41,13 +41,17 @@ namespace UnicodeHelper
                 {
                     Console.WriteLine($"GetUnicodeCategory doesn't match for character {((UCodepoint)c).ToHexString()} - " +
                                       $".Net: {dotNetCategory}, Found: {uCat}");
-                    Assert.AreEqual(UnicodeCategory.OtherNotAssigned, dotNetCategory);
+                    if (c != '\u0295') // This was changed from lower to other in Unicode 17.
+                    {
+                        Assert.AreEqual(UnicodeCategory.OtherNotAssigned, dotNetCategory,
+                            "Did Unicode change the category of a codepoint?");
+                    }
 
                     incorrectCount++;
                 }
             }
 
-            Assert.That.IsLessThanOrEqualTo(incorrectCount, 22, "Unexpected number of differences from .Net");
+            Assert.That.IsLessThanOrEqualTo(incorrectCount, 85, "Unexpected number of differences from .Net");
         }
         #endregion
 
@@ -102,11 +106,12 @@ namespace UnicodeHelper
                 {
                     Console.WriteLine($"IsUpper doesn't match for character {((UCodepoint)c).ToHexString()} - " +
                                       $".Net: {dotNetIsUpper}, Found: {isUpper}");
+                    Assert.IsFalse(dotNetIsUpper, "Did Unicode change a letter to not be a letter?");
                     incorrectCount++;
                 }
             }
 
-            Assert.That.IsLessThanOrEqualTo(incorrectCount, 5, "Unexpected number of differences from .Net");
+            Assert.That.IsLessThanOrEqualTo(incorrectCount, 8, "Unexpected number of differences from .Net");
         }
         #endregion
 
@@ -174,11 +179,13 @@ namespace UnicodeHelper
                 {
                     Console.WriteLine($"IsLower doesn't match for character {((UCodepoint)c).ToHexString()} - " +
                                       $".Net: {dotNetIsLower}, Found: {isLower}");
+                    if (c != '\u0295') // This was changed from lower to other in Unicode 17.
+                        Assert.IsFalse(dotNetIsLower, "Did Unicode change a letter to not be a letter?");
                     incorrectCount++;
                 }
             }
 
-            Assert.That.IsLessThanOrEqualTo(incorrectCount, 3, "Unexpected number of differences from .Net");
+            Assert.That.IsLessThanOrEqualTo(incorrectCount, 5, "Unexpected number of differences from .Net");
         }
         #endregion
 
@@ -347,11 +354,12 @@ namespace UnicodeHelper
                 {
                     Console.WriteLine($"IsLetter doesn't match for character {((UCodepoint)c).ToHexString()} - " +
                                       $".Net: {dotNetIsLetter}, Found: {isLetter}");
+                    Assert.IsFalse(dotNetIsLetter, "Did Unicode change a letter to no longer be a letter?");
                     incorrectCount++;
                 }
             }
 
-            Assert.That.IsLessThanOrEqualTo(incorrectCount, 8, "Unexpected number of differences from .Net");
+            Assert.That.IsLessThanOrEqualTo(incorrectCount, 16, "Unexpected number of differences from .Net");
         }
         #endregion
 
@@ -459,11 +467,12 @@ namespace UnicodeHelper
                 {
                     Console.WriteLine($"IsSymbol doesn't match for character {((UCodepoint)c).ToHexString()} - " +
                                       $".Net: {dotNetIsSymbol}, Found: {isSymbol}");
+                    Assert.IsFalse(dotNetIsSymbol, "Did Unicode change a symbol to no longer be a symbol?");
                     incorrectCount++;
                 }
             }
 
-            Assert.That.IsLessThanOrEqualTo(incorrectCount, 10, "Unexpected number of differences from .Net");
+            Assert.That.IsLessThanOrEqualTo(incorrectCount, 37, "Unexpected number of differences from .Net");
         }
         #endregion
 
@@ -566,11 +575,13 @@ namespace UnicodeHelper
                 {
                     Console.WriteLine($"IsLetterOrDigit doesn't match for character {((UCodepoint)c).ToHexString()} - " +
                                       $".Net: {dotNetIsLetterOrDigit}, Found: {isLetterOrDigit}");
+                    Assert.IsFalse(dotNetIsLetterOrDigit, 
+                        "Did Unicode change a letter or digit to no longer be a letter or digit?");
                     incorrectCount++;
                 }
             }
 
-            Assert.That.IsLessThanOrEqualTo(incorrectCount, 8, "Unexpected number of differences from .Net");
+            Assert.That.IsLessThanOrEqualTo(incorrectCount, 16, "Unexpected number of differences from .Net");
         }
         #endregion
 
