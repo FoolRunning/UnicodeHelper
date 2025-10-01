@@ -7,7 +7,7 @@
     <RunAnalyzersDuringLiveAnalysis>False</RunAnalyzersDuringLiveAnalysis>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>Unicode Helper</Title>
-    <Version>0.7.2</Version>
+    <Version>0.7.3</Version>
     <Authors>FoolRunning</Authors>
     <Description>.Net library to get information about Unicode codepoints and to better handle the upper planes (1-16) of Unicode.</Description>
     <Copyright>© 2025 Tim Steenwyk</Copyright>
@@ -21,7 +21,8 @@
     <DelaySign>False</DelaySign>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <PackageReleaseNotes>Strong named the assembly and package.</PackageReleaseNotes>
+    <PackageReleaseNotes>Added explicit reference to Microsoft.Bcl.HashCode to fix some runtime errors in certain .Net environments.
+Updated all 3rd-party libraries to the lastest versions.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
@@ -44,10 +45,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CsvHelper" Version="33.0.1" />
-    <PackageReference Include="JetBrains.Annotations" Version="2024.3.0">
+    <PackageReference Include="CsvHelper" Version="33.1.0" />
+    <PackageReference Include="JetBrains.Annotations" Version="2025.2.2">
 	  <PrivateAssets>all</PrivateAssets>
 	</PackageReference>
+    <PackageReference Include="Microsoft.Bcl.HashCode" Version="6.0.0" />
     <PackageReference Include="SharpZipLib" Version="1.4.2" />
   </ItemGroup>
 
