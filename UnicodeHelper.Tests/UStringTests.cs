@@ -654,6 +654,20 @@
         }
         #endregion
 
+        #region DetermineDirection tests
+        private static IEnumerable<object?[]> DetermineDirectionTestData => CommonTestData.DetermineDirectionTestData;
+
+        [TestMethod]
+        [DynamicData(nameof(DetermineDirectionTestData))]
+        public void DetermineDirection(string? testStr, TextDirection expectedDirection)
+        {
+            if (testStr == null)
+                return;
+            UString us = new(testStr);
+            Assert.AreEqual(expectedDirection, us.DetermineDirection());
+        }
+        #endregion
+
         #region Private helper methods
         private static UString CreateTestSubstring(string? str)
         {

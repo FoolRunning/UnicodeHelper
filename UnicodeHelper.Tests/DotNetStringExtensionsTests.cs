@@ -33,5 +33,16 @@ namespace UnicodeHelper
             Assert.That.SequenceEqual(expectedResult, codepoints);
         }
         #endregion
+
+        #region DetermineDirection tests
+        private static IEnumerable<object?[]> DetermineDirectionTestData => CommonTestData.DetermineDirectionTestData;
+
+        [TestMethod]
+        [DynamicData(nameof(DetermineDirectionTestData))]
+        public void DetermineDirection(string? dotNetString, TextDirection expectedDirection)
+        {
+            Assert.AreEqual(expectedDirection, dotNetString.DetermineDirection());
+        }
+        #endregion
     }
 }

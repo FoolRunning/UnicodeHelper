@@ -129,7 +129,7 @@ namespace UnicodeHelper
         }
 
         // TODO: Should this be here for convenience or stay only in UnicodeProperties?
-        //public static UnicodeProperty GetProperties(UChar uc)
+        //public static UnicodeProperty GetProperties(UCodepoint uc)
         //{
         //    return UnicodeProperties.GetProps(uc);
         //}

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using JetBrains.Annotations;
+using UnicodeHelper.Internal;
 
 namespace UnicodeHelper
 {
@@ -724,6 +725,19 @@ namespace UnicodeHelper
             }
 
             return result.ToString();
+        }
+        
+        /// <summary>
+        /// Determines the overall text direction of this Unicode string.
+        /// A result of <see cref="TextDirection.Undefined"/> means that no strongly directional characters
+        /// were found, or that any found characters were in an isolate section.
+        /// </summary>
+        /// <remarks>This algorithm uses The Paragraph Level algorithm specified in
+        /// https://www.unicode.org/reports/tr9/#The_Paragraph_Level to determine level. Basically treating
+        /// this Unicode string as a "paragraph".</remarks>
+        public TextDirection DetermineDirection()
+        {
+            return HelperUtils.DetermineDirection(this);
         }
         #endregion
 
