@@ -531,10 +531,20 @@ namespace UnicodeHelper
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Determines whether the beginning of this Unicode string matches the specified value.
+        /// </summary>
         public bool StartsWith(UCodepoint value, bool ignoreCase = false)
         {
-            // TODO: Write tests for this method
-            throw new NotImplementedException();
+            if (Length == 0)
+                return false;
+            
+            UCodepoint start = _codepoints[_startIndex];
+            if (start == value)
+                return true;
+
+            return ignoreCase &&
+                   (UCodepoint.ToLower(start) == value || UCodepoint.ToUpper(start) == value);
         }
 
         public bool StartsWith(UString value, bool ignoreCase = false)
@@ -543,10 +553,20 @@ namespace UnicodeHelper
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Determines whether the end of this Unicode string matches the specified value.
+        /// </summary>
         public bool EndsWith(UCodepoint value, bool ignoreCase = false)
         {
-            // TODO: Write tests for this method
-            throw new NotImplementedException();
+            if (Length == 0)
+                return false;
+            
+            UCodepoint end = _codepoints[_startIndex + Length - 1];
+            if (end == value)
+                return true;
+
+            return ignoreCase &&
+                   (UCodepoint.ToLower(end) == value || UCodepoint.ToUpper(end) == value);
         }
 
         public bool EndsWith(UString value, bool ignoreCase = false)

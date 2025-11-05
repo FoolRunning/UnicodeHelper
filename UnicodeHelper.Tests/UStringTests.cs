@@ -354,6 +354,66 @@
         }
         #endregion
 
+        #region StartsWith_UCodepoint tests        
+        private static IEnumerable<object[]> UCodepointStartsWithTestData =>
+        [
+            ["", (UCodepoint)'A', true, false],
+            ["", (UCodepoint)'A', false, false],
+            ["This test!", (UCodepoint)'h', false, false],
+            ["This test!", (UCodepoint)'T', false, true],
+            ["This test!", (UCodepoint)'T', true, true],
+            ["This test!", (UCodepoint)'t', false, false],
+            ["This test!", (UCodepoint)'t', true, true],
+            ["العربية", (UCodepoint)'ا', false, true],
+            ["\U00010570\U00010597", UCodepoint.ReadFromStr("\U00010570", 0), false, true], // VITHKUQI letters
+            ["\U00010570\U00010597", UCodepoint.ReadFromStr("\U00010570", 0), true, true], // VITHKUQI letters
+            ["\U00010570\U00010597", UCodepoint.ReadFromStr("\U00010597", 0), false, false], // VITHKUQI letters
+            ["\U00010570\U00010597", UCodepoint.ReadFromStr("\U00010597", 0), true, true], // VITHKUQI letters
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(UCodepointStartsWithTestData))]
+        public void StartsWith_UCodepoint(string testString, UCodepoint codePoint, bool ignoreCase, bool expectedResult)
+        {
+            UString us = new(testString);
+            Assert.AreEqual(expectedResult, us.StartsWith(codePoint, ignoreCase));
+
+            // Test making sure that a substring results in the correct result
+            us = CreateTestSubstring(testString);
+            Assert.AreEqual(expectedResult, us.StartsWith(codePoint, ignoreCase));
+        }
+        #endregion
+
+        #region EndsWith_UCodepoint tests
+        private static IEnumerable<object[]> UCodepointEndsWithTestData =>
+        [
+            ["", (UCodepoint)'A', true, false],
+            ["", (UCodepoint)'A', false, false],
+            ["This test", (UCodepoint)'s', false, false],
+            ["This test", (UCodepoint)'t', false, true],
+            ["This test", (UCodepoint)'t', true, true],
+            ["This test", (UCodepoint)'T', false, false],
+            ["This test", (UCodepoint)'T', true, true],
+            ["العربية", (UCodepoint)'ة', false, true],
+            ["\U00010570\U00010597", UCodepoint.ReadFromStr("\U00010597", 0), false, true], // VITHKUQI letters
+            ["\U00010570\U00010597", UCodepoint.ReadFromStr("\U00010597", 0), true, true], // VITHKUQI letters
+            ["\U00010570\U00010597", UCodepoint.ReadFromStr("\U00010570", 0), false, false], // VITHKUQI letters
+            ["\U00010570\U00010597", UCodepoint.ReadFromStr("\U00010570", 0), true, true], // VITHKUQI letters
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(UCodepointEndsWithTestData))]
+        public void EndsWith_UCodepoint(string testString, UCodepoint codePoint, bool ignoreCase, bool expectedResult)
+        {
+            UString us = new(testString);
+            Assert.AreEqual(expectedResult, us.EndsWith(codePoint, ignoreCase));
+
+            // Test making sure that a substring results in the correct result
+            us = CreateTestSubstring(testString);
+            Assert.AreEqual(expectedResult, us.EndsWith(codePoint, ignoreCase));
+        }
+        #endregion
+
         #region IsNullOrEmpty tests
         private static IEnumerable<object?[]> IsNullOrEmptyTestData =>
         [
