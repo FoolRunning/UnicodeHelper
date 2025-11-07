@@ -1,9 +1,9 @@
-﻿using System;
+﻿using JetBrains.Annotations;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
-using JetBrains.Annotations;
 using UnicodeHelper.Internal;
 
 namespace UnicodeHelper
@@ -707,15 +707,20 @@ namespace UnicodeHelper
             return new UString(_startIndex + start, length, _codepoints);
         }
 
+        /// <summary>
+        /// Normalizes the current Unicode string to the default normalization form (Form C).
+        /// </summary>
         public UString Normalize()
         {
             return Normalize(NormalizationForm.FormC);
         }
 
+        /// <summary>
+        /// Normalizes the current Unicode string to the specified Unicode normalization form.
+        /// </summary>
         public UString Normalize(NormalizationForm form)
         {
-            // TODO: Write tests for this method
-            throw new NotImplementedException();
+            return NormalizationEngine.Normalize(this, form);
         }
 
         /// <summary>
@@ -886,7 +891,7 @@ namespace UnicodeHelper
             public void Reset()
             {
                 _index = -1;
-                _current = UCodepoint.MinValue;
+                _current = UCodepoint.Null;
             }
         }
         #endregion

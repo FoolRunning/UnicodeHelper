@@ -93,7 +93,7 @@ namespace UnicodeHelper
             public void Reset()
             {
                 _index = -1;
-                _current = UCodepoint.MinValue;
+                _current = UCodepoint.Null;
             }
 
             public IEnumerator<UCodepoint> GetEnumerator()

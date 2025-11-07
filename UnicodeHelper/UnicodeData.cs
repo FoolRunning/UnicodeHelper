@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using CsvHelper;
 using CsvHelper.Configuration.Attributes;
 using JetBrains.Annotations;
@@ -11,7 +12,7 @@ using UnicodeHelper.Internal;
 namespace UnicodeHelper
 {
     /// <summary>
-    /// 
+    /// General Unicode data and properties
     /// </summary>
     /// <remarks>This class represents the data in the Unicode specification
     /// <see href="https://www.unicode.org/reports/tr44/#UnicodeData.txt">UnicodeData.txt</see></remarks>
@@ -33,8 +34,10 @@ namespace UnicodeHelper
         private static readonly Dictionary<UCodepoint, UCodepoint> upperCaseMappings = new Dictionary<UCodepoint, UCodepoint>();
         private static readonly Dictionary<UCodepoint, UCodepoint> lowerCaseMappings = new Dictionary<UCodepoint, UCodepoint>();
         private static readonly Dictionary<UCodepoint, UCodepoint> titleCaseMappings = new Dictionary<UCodepoint, UCodepoint>();
+        private static readonly Dictionary<long, UCodepoint> compositionMapping = new Dictionary<long, UCodepoint>();
+        private static readonly Dictionary<UCodepoint, UCodepoint[]> decompositionMapping = new Dictionary<UCodepoint, UCodepoint[]>();
 
-        //private static readonly byte[] s_combiningClasses = new byte[UnicodeCodepointCount];
+        private static readonly byte[] combiningClasses = new byte[UnicodeCodepointCount];
         //private static readonly int[] s_flags = new int[UnicodeCodepointCount];
         #endregion
 
@@ -141,6 +144,8 @@ namespace UnicodeHelper
                     }
                 }
             }
+
+            CleanUpCompositions();
         }
         #endregion
 
@@ -152,6 +157,22 @@ namespace UnicodeHelper
         #endregion
 
         #region Internal methods
+        internal static byte GetCombiningClass(UCodepoint uc)
+        {
+            return combiningClasses[(int)uc];
+        }
+
+        internal static UCodepoint GetComposition(UCodepoint ucBase, UCodepoint ucCombining)
+        {
+            long key = CreateKey(ucBase, ucCombining);
+            return compositionMapping.TryGetValue(key, out UCodepoint combined) ? combined : UCodepoint.Null;
+        }
+
+        internal static UCodepoint[] GetDecomposition(UCodepoint uc)
+        {
+            return decompositionMapping.TryGetValue(uc, out UCodepoint[] mapping) ? mapping : null;
+        }
+
         internal static UnicodeCategory GetUnicodeCategory(UCodepoint uc)
         {
             return (UnicodeCategory)categories[(int)uc];
@@ -192,15 +213,33 @@ namespace UnicodeHelper
             bidiClasses[codePoint] = bidiClass;
         }
 
+        private static void CleanUpCompositions()
+        {
+            CompositionExclusions compositionExclusions = new CompositionExclusions();
+
+            foreach (KeyValuePair<long, UCodepoint> kvp in compositionMapping.ToArray())
+            {
+                long key = kvp.Key;
+                Tuple<UCodepoint, UCodepoint> keyParts = UncreateKey(key);
+                if (GetCombiningClass(keyParts.Item1) != 0 || compositionExclusions.IsExcluded(kvp.Value))
+                    compositionMapping.Remove(kvp.Key);
+            }
+        }
+
         private static void UpdateDatabase(int codePoint, UnicodeDataFileLine line)
         {
             // Category
             categories[codePoint] = (byte)UnicodeConversion.ConvertCategory(line.GeneralCategory);
 
+            // Combining class
+            combiningClasses[codePoint] = byte.Parse(line.CombiningClass, CultureInfo.InvariantCulture);
+
             // Bidi class
             bidiClasses[codePoint] = UnicodeConversion.ConvertBidiClass(line.BidiClass);
 
             UCodepoint uc = (UCodepoint)codePoint;
+            
+            HandleDecomposition(uc, line.DecompositionTypeAndMapping);
 
             // Numeric value
             if (!string.IsNullOrEmpty(line.Numeric))
@@ -224,6 +263,35 @@ namespace UnicodeHelper
                 titleCaseMappings.Add(uc, UCodepoint.FromHexStr(line.TitleCaseMapping));
             else if (!string.IsNullOrEmpty(line.UppercaseMapping))
                 titleCaseMappings.Add(uc, UCodepoint.FromHexStr(line.UppercaseMapping));
+        }
+
+        private static void HandleDecomposition(UCodepoint uc, string decompositionStr)
+        {
+            if (string.IsNullOrWhiteSpace(decompositionStr))
+                return;
+
+            string[] parts = decompositionStr.Split(' ');
+            if (parts[0].StartsWith("<"))
+                return;
+
+            if (parts.Length > 2)
+                throw new InvalidOperationException($"Unexpected mapping for character {uc.ToHexString()}:{string.Join(", ", parts)}");
+
+            UCodepoint[] mapping = parts.Select(p => (UCodepoint)int.Parse(p, NumberStyles.HexNumber)).ToArray();
+            decompositionMapping.Add(uc, mapping);
+
+            if (mapping.Length == 2)
+                compositionMapping.Add(CreateKey(mapping[0], mapping[1]), uc);
+        }
+
+        private static long CreateKey(UCodepoint cpBase, UCodepoint cpCombining)
+        {
+            return ((long)cpBase << 32) | (long)cpCombining;
+        }
+
+        private static Tuple<UCodepoint, UCodepoint> UncreateKey(long key)
+        {
+            return new Tuple<UCodepoint, UCodepoint>((UCodepoint)(int)(key >> 32), (UCodepoint)(int)key);
         }
         #endregion
 

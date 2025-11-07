@@ -16,7 +16,7 @@
         [DynamicData(nameof(AppendUCodepointTestData))]
         public void Append_UCodepoint(string expectedResult, params string[] parts)
         {
-            UStringBuilder usb = new UStringBuilder();
+            using UStringBuilder usb = new UStringBuilder();
             foreach (string part in parts)
                 usb.Append(UCodepoint.ReadFromStr(part, 0));
 
@@ -43,7 +43,7 @@
         [DynamicData(nameof(AppendUStringTestData))]
         public void Append_UString(string expectedResult, params string?[] parts)
         {
-            UStringBuilder usb = new UStringBuilder();
+            using UStringBuilder usb = new UStringBuilder();
             foreach (string? part in parts)
                 usb.Append(part != null ? new UString(part) : null);
 
@@ -70,7 +70,7 @@
         [DynamicData(nameof(AppendStringTestData))]
         public void Append_String(string expectedResult, params string?[] parts)
         {
-            UStringBuilder usb = new UStringBuilder();
+            using UStringBuilder usb = new UStringBuilder();
             foreach (string? part in parts)
                 usb.Append(part);
 

@@ -7,7 +7,7 @@
     <RunAnalyzersDuringLiveAnalysis>False</RunAnalyzersDuringLiveAnalysis>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>Unicode Helper</Title>
-    <Version>0.8.3</Version>
+    <Version>0.9.0</Version>
     <Authors>FoolRunning</Authors>
     <Description>.Net library to get information about Unicode codepoints and to better handle the upper planes (1-16) of Unicode.</Description>
     <Copyright>© 2025 Tim Steenwyk</Copyright>
@@ -21,7 +21,7 @@
     <DelaySign>False</DelaySign>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <PackageReleaseNotes>Added algorithm to determine the text direction of a string.</PackageReleaseNotes>
+    <PackageReleaseNotes>Added normalization to UString.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

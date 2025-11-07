@@ -1,4 +1,7 @@
-﻿namespace UnicodeHelper
+﻿using System.Text;
+using UnicodeHelper.TestData;
+
+namespace UnicodeHelper
 {
     [TestClass]
     public class UStringTests
@@ -725,6 +728,28 @@
                 return;
             UString us = new(testStr);
             Assert.AreEqual(expectedDirection, us.DetermineDirection());
+        }
+        #endregion
+
+        #region Normalization tests
+        [TestMethod]
+        public void Normalization_FormC()
+        {
+            foreach (NormalizationTestData testData in NormalizationTestDataSet.TestCases)
+            {
+                UString result = testData.Source.Normalize(NormalizationForm.FormC);
+                Assert.AreEqual(testData.NfcResult, result, testData.Description);
+            }
+        }
+        
+        [TestMethod]
+        public void Normalization_FormD()
+        {
+            foreach (NormalizationTestData testData in NormalizationTestDataSet.TestCases)
+            {
+                UString result = testData.Source.Normalize(NormalizationForm.FormD);
+                Assert.AreEqual(testData.NfdResult, result, testData.Description);
+            }
         }
         #endregion
 
