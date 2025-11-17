@@ -25,20 +25,22 @@ namespace UnicodeHelper
 
         private const string StartOfRangeNameSuffix = ", First>";
         private const string EndOfRangeNameSuffix = ", Last>";
+        
+        private const int BitShift = 21; // Unicode codepoints use 21 bits
+        private const int BitMask = 0x1FFFFF; // 21 bits
         #endregion
 
         #region Data fields
         private static readonly byte[] categories = new byte[UnicodeCodepointCount];
         private static readonly UnicodeBidiClass[] bidiClasses = new UnicodeBidiClass[UnicodeCodepointCount];
-        private static readonly Dictionary<UCodepoint, double> numericValues = new Dictionary<UCodepoint, double>();
-        private static readonly Dictionary<UCodepoint, UCodepoint> upperCaseMappings = new Dictionary<UCodepoint, UCodepoint>();
-        private static readonly Dictionary<UCodepoint, UCodepoint> lowerCaseMappings = new Dictionary<UCodepoint, UCodepoint>();
-        private static readonly Dictionary<UCodepoint, UCodepoint> titleCaseMappings = new Dictionary<UCodepoint, UCodepoint>();
-        private static readonly Dictionary<long, UCodepoint> compositionMapping = new Dictionary<long, UCodepoint>();
-        private static readonly Dictionary<UCodepoint, UCodepoint[]> decompositionMapping = new Dictionary<UCodepoint, UCodepoint[]>();
+        private static readonly Dictionary<UCodepoint, double> numericValues = new Dictionary<UCodepoint, double>(2000);
+        private static readonly Dictionary<UCodepoint, UCodepoint> upperCaseMappings = new Dictionary<UCodepoint, UCodepoint>(1600);
+        private static readonly Dictionary<UCodepoint, UCodepoint> lowerCaseMappings = new Dictionary<UCodepoint, UCodepoint>(1600);
+        private static readonly Dictionary<UCodepoint, UCodepoint> titleCaseMappings = new Dictionary<UCodepoint, UCodepoint>(1600);
+        private static readonly Dictionary<long, UCodepoint> compositionMapping = new Dictionary<long, UCodepoint>(2700);
+        private static readonly Dictionary<int, UCodepoint[]> decompositionMapping = new Dictionary<int, UCodepoint[]>(8500);
 
         private static readonly byte[] combiningClasses = new byte[UnicodeCodepointCount];
-        //private static readonly int[] s_flags = new int[UnicodeCodepointCount];
         #endregion
 
         #region Static constructor
@@ -146,6 +148,7 @@ namespace UnicodeHelper
             }
 
             CleanUpCompositions();
+            FullyExpandDecomposition();
         }
         #endregion
 
@@ -164,13 +167,14 @@ namespace UnicodeHelper
 
         internal static UCodepoint GetComposition(UCodepoint ucBase, UCodepoint ucCombining)
         {
-            long key = CreateKey(ucBase, ucCombining);
+            long key = CreateCombiningKey(ucBase, ucCombining, false);
             return compositionMapping.TryGetValue(key, out UCodepoint combined) ? combined : UCodepoint.Null;
         }
 
-        internal static UCodepoint[] GetDecomposition(UCodepoint uc)
+        internal static UCodepoint[] GetDecomposition(UCodepoint uc, bool compatMapping)
         {
-            return decompositionMapping.TryGetValue(uc, out UCodepoint[] mapping) ? mapping : null;
+            int key = CreateDecompKey(uc, compatMapping);
+            return decompositionMapping.TryGetValue(key, out UCodepoint[] mapping) ? mapping : null;
         }
 
         internal static UnicodeCategory GetUnicodeCategory(UCodepoint uc)
@@ -211,19 +215,6 @@ namespace UnicodeHelper
         {
             categories[codePoint] = (byte)category;
             bidiClasses[codePoint] = bidiClass;
-        }
-
-        private static void CleanUpCompositions()
-        {
-            CompositionExclusions compositionExclusions = new CompositionExclusions();
-
-            foreach (KeyValuePair<long, UCodepoint> kvp in compositionMapping.ToArray())
-            {
-                long key = kvp.Key;
-                Tuple<UCodepoint, UCodepoint> keyParts = UncreateKey(key);
-                if (GetCombiningClass(keyParts.Item1) != 0 || compositionExclusions.IsExcluded(kvp.Value))
-                    compositionMapping.Remove(kvp.Key);
-            }
         }
 
         private static void UpdateDatabase(int codePoint, UnicodeDataFileLine line)
@@ -270,28 +261,104 @@ namespace UnicodeHelper
             if (string.IsNullOrWhiteSpace(decompositionStr))
                 return;
 
-            string[] parts = decompositionStr.Split(' ');
-            if (parts[0].StartsWith("<"))
-                return;
+            bool compatMapping = false;
+            if (decompositionStr.StartsWith("<"))
+            {
+                // Ignore decomposition type, so remove it from the string
+                int spaceIndex = decompositionStr.IndexOf(' ');
+                decompositionStr = decompositionStr.Substring(spaceIndex + 1);
+                compatMapping = true; // All tagged decompositions are compatibility mappings
+            }
 
-            if (parts.Length > 2)
+            string[] parts = decompositionStr.Split(' ');
+            if (parts.Length > 2 && !compatMapping)
                 throw new InvalidOperationException($"Unexpected mapping for character {uc.ToHexString()}:{string.Join(", ", parts)}");
 
             UCodepoint[] mapping = parts.Select(p => (UCodepoint)int.Parse(p, NumberStyles.HexNumber)).ToArray();
-            decompositionMapping.Add(uc, mapping);
+            decompositionMapping.Add(CreateDecompKey(uc, compatMapping), mapping);
+            if (!compatMapping)
+                decompositionMapping.Add(CreateDecompKey(uc, true), mapping);
 
-            if (mapping.Length == 2)
-                compositionMapping.Add(CreateKey(mapping[0], mapping[1]), uc);
+            if (mapping.Length == 2) // One-to-one mappings are not used for composition
+            {
+                long key = CreateCombiningKey(mapping[0], mapping[1], compatMapping);
+                if (!compositionMapping.ContainsKey(key))
+                    compositionMapping.Add(key, uc);
+                if (!compatMapping)
+                    compositionMapping.Add(CreateCombiningKey(mapping[0], mapping[1], true), uc);
+            }
+
+            // TODO: Verify more-than-two codepoint mappings are not used for composition.
+            // They don't seem to be based on the test data and normalization reference implementation.
         }
 
-        private static long CreateKey(UCodepoint cpBase, UCodepoint cpCombining)
+        private static void CleanUpCompositions()
         {
-            return ((long)cpBase << 32) | (long)cpCombining;
+            // Remove any excluded compositions that haven't already been ignored
+            CompositionExclusions compositionExclusions = new CompositionExclusions();
+            foreach (KeyValuePair<long, UCodepoint> kvp in compositionMapping.ToArray())
+            {
+                long key = kvp.Key;
+                Tuple<UCodepoint, UCodepoint> keyParts = UncreateCombiningKey(key);
+                if (GetCombiningClass(keyParts.Item1) != 0 || compositionExclusions.IsExcluded(kvp.Value))
+                    compositionMapping.Remove(kvp.Key);
+            }
         }
 
-        private static Tuple<UCodepoint, UCodepoint> UncreateKey(long key)
+        private static void FullyExpandDecomposition()
         {
-            return new Tuple<UCodepoint, UCodepoint>((UCodepoint)(int)(key >> 32), (UCodepoint)(int)key);
+            List<UCodepoint> newMapping = new List<UCodepoint>();
+            bool changedSomething;
+            do
+            {
+                changedSomething = false;
+                foreach (KeyValuePair<int, UCodepoint[]> kvp in decompositionMapping.ToArray())
+                {
+                    Tuple<UCodepoint, bool> keyParts = UncreateDecompKey(kvp.Key);
+                    bool compatMapping = keyParts.Item2;
+                    
+                    newMapping.Clear();
+                    for (int i = 0; i < kvp.Value.Length; i++)
+                    {
+                        UCodepoint cp = kvp.Value[i];
+                        UCodepoint[] decomposition = GetDecomposition(cp, compatMapping);
+                        if (decomposition == null)
+                            newMapping.Add(cp);
+                        else
+                        {
+                            Debug.Assert(i == 0 || compatMapping);
+                            newMapping.AddRange(decomposition);
+                            changedSomething = true;
+                        }
+                    }
+
+                    UCodepoint[] newMappingArray = newMapping.ToArray();
+                    if (!changedSomething)
+                        HelperUtils.SortCanonical(newMappingArray, newMappingArray.Length); // Sort to avoid sorting later
+                    decompositionMapping[kvp.Key] = newMappingArray;
+                }
+            }
+            while (changedSomething);
+        }
+        
+        private static int CreateDecompKey(UCodepoint uc, bool compatMapping)
+        {
+            return (HelperUtils.BoolToInt(compatMapping) << BitShift) | (int)uc;
+        }
+
+        private static Tuple<UCodepoint, bool> UncreateDecompKey(int decompKey)
+        {
+            return new Tuple<UCodepoint, bool>((UCodepoint)(decompKey & BitMask), (decompKey & (1 << BitShift)) != 0);
+        }
+
+        private static long CreateCombiningKey(UCodepoint cpBase, UCodepoint cpCombining, bool compatMapping)
+        {
+            return ((long)HelperUtils.BoolToInt(compatMapping) << (BitShift * 2)) | ((long)cpBase << BitShift) | (long)cpCombining;
+        }
+
+        private static Tuple<UCodepoint, UCodepoint> UncreateCombiningKey(long key)
+        {
+            return new Tuple<UCodepoint, UCodepoint>((UCodepoint)(int)((key >> BitShift) & BitMask), (UCodepoint)(int)(key & BitMask));
         }
         #endregion
 

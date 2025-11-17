@@ -8,7 +8,9 @@ using JetBrains.Annotations;
 
 namespace UnicodeHelper.TestData
 {
-    public sealed record NormalizationTestData(UString Source, UString NfcResult, UString NfdResult, string Description)
+    public sealed record NormalizationTestData(UString Source, 
+        UString NfcResult, UString NfdResult, UString NfkcResult, UString NfkdResult, 
+        string Description)
     {
         public override string ToString()
         {
@@ -16,9 +18,6 @@ namespace UnicodeHelper.TestData
         }
     }
 
-    /// <summary>
-    /// 
-    /// </summary>
     /// <remarks>Test data taken from https://www.unicode.org/Public/UCD/latest/ucd/NormalizationTest.txt</remarks>
     internal static class NormalizationTestDataSet
     {
@@ -55,6 +54,8 @@ namespace UnicodeHelper.TestData
                 testCases.Add(new NormalizationTestData(CreateUStringFromCodepoints(line.Source), 
                     CreateUStringFromCodepoints(line.NfcResult),
                     CreateUStringFromCodepoints(line.NfdResult), 
+                    CreateUStringFromCodepoints(line.NfkcResult),
+                    CreateUStringFromCodepoints(line.NfkdResult), 
                     string.Join("", line.Comments).TrimStart(' ', '#')));
             }
         }

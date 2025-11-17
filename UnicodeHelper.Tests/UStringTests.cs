@@ -738,7 +738,8 @@ namespace UnicodeHelper
             foreach (NormalizationTestData testData in NormalizationTestDataSet.TestCases)
             {
                 UString result = testData.Source.Normalize(NormalizationForm.FormC);
-                Assert.AreEqual(testData.NfcResult, result, testData.Description);
+                Assert.AreEqual(testData.NfcResult, result, 
+                    ErrorString(testData.NfcResult, result, testData.Description));
             }
         }
         
@@ -748,7 +749,30 @@ namespace UnicodeHelper
             foreach (NormalizationTestData testData in NormalizationTestDataSet.TestCases)
             {
                 UString result = testData.Source.Normalize(NormalizationForm.FormD);
-                Assert.AreEqual(testData.NfdResult, result, testData.Description);
+                Assert.AreEqual(testData.NfdResult, result, 
+                    ErrorString(testData.NfdResult, result, testData.Description));
+            }
+        }
+        
+        [TestMethod]
+        public void Normalization_FormKD()
+        {
+            foreach (NormalizationTestData testData in NormalizationTestDataSet.TestCases)
+            {
+                UString result = testData.Source.Normalize(NormalizationForm.FormKD);
+                Assert.AreEqual(testData.NfkdResult, result, 
+                    ErrorString(testData.NfkdResult, result, testData.Description));
+            }
+        }
+
+        [TestMethod]
+        public void Normalization_FormKC()
+        {
+            foreach (NormalizationTestData testData in NormalizationTestDataSet.TestCases)
+            {
+                UString result = testData.Source.Normalize(NormalizationForm.FormKC);
+                Assert.AreEqual(testData.NfkcResult, result,
+                    ErrorString(testData.NfkcResult, result, testData.Description));
             }
         }
         #endregion
@@ -763,6 +787,16 @@ namespace UnicodeHelper
 
             UString us = new(pre + str + suff);
             return us.SubString(pre.Length, us.Length - pre.Length - suff.Length);
+        }
+
+        private static string ErrorString(UString expected, UString result, string description)
+        {
+            return $"\nExp: {UStrToCodepoints(expected)}\nGot: {UStrToCodepoints(result)}\nFor:{description}";
+        }
+
+        private static string UStrToCodepoints(UString ustr)
+        {
+            return string.Join(" ", ustr.Select(uc => uc.ToHexString()));
         }
         #endregion
     }

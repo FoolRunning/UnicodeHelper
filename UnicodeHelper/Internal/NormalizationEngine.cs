@@ -1,10 +1,16 @@
 ﻿using System;
 using System.Buffers;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace UnicodeHelper.Internal
 {
+    /// <summary>
+    /// Handles normalization of Unicode strings.
+    /// </summary>
+    /// <remarks>Most of this is ported from the reference implementation at
+    /// https://www.w3.org/International/charlint/ </remarks>
     [SuppressMessage("ReSharper", "InconsistentNaming")]
     internal static class NormalizationEngine
     {
@@ -26,7 +32,7 @@ namespace UnicodeHelper.Internal
         #endregion
 
         #region Data fields
-        private static readonly ArrayPool<DecomposedItem> decomposedItemPool = ArrayPool<DecomposedItem>.Shared;
+        private static readonly ArrayPool<UCodepoint> decomposedItemPool = ArrayPool<UCodepoint>.Shared;
         #endregion
 
         #region Public methods
@@ -34,58 +40,146 @@ namespace UnicodeHelper.Internal
         {
             switch (normalizationForm)
             {
-                case NormalizationForm.FormC: return NormalizeFormC(ustr);
                 case NormalizationForm.FormD: return NormalizeFormD(ustr);
+                case NormalizationForm.FormC: return NormalizeFormC(ustr, false);
+                case NormalizationForm.FormKD: return NormalizeFormKD(ustr);
+                case NormalizationForm.FormKC: return NormalizeFormC(ustr, true);
                 default: throw new NotImplementedException("Normalization not supported: " + normalizationForm);
             }
         }
         #endregion
-        
-        #region Composition (NFC) methods
-        private static UString NormalizeFormC(UString ustr)
+
+        #region Helper methods
+        private static UString NormalizeFormD(UString ustr)
+        {
+            using (UStringBuilder sb = new UStringBuilder(ustr.Length * 5 / 4))
+            {
+                DecomposeToSB(ustr, false, sb);
+                return sb.ToUString();
+            }
+        }
+
+        private static UString NormalizeFormKD(UString ustr)
+        {
+            using (UStringBuilder sb = new UStringBuilder(ustr.Length * 3 / 2))
+            {
+                DecomposeToSB(ustr, true, sb);
+                return sb.ToUString();
+            }
+        }
+
+        private static void DecomposeToSB(UString ustr, bool compatMapping, UStringBuilder sb)
+        {
+            UCodepoint[] decomposedChar = decomposedItemPool.Rent(50); // TODO: Figure out reasonable size
+            try
+            {
+                int cpCount = 0;
+                // ReSharper disable once ForCanBeConvertedToForeach
+                for (int i = 0; i < ustr.Length; i++)
+                {
+                    UCodepoint uc = ustr[i];
+                    if (UnicodeData.GetCombiningClass(uc) == 0)
+                    {
+                        Debug.Assert(i == 0 || cpCount > 0);
+                        HelperUtils.SortCanonical(decomposedChar, cpCount);
+                        sb.Append(decomposedChar, cpCount);
+
+                        cpCount = 0;
+                    }
+
+                    AppendDecomposedItem(uc, compatMapping, decomposedChar, ref cpCount);
+                }
+
+                HelperUtils.SortCanonical(decomposedChar, cpCount);
+                sb.Append(decomposedChar, cpCount);
+            }
+            finally
+            {
+                decomposedItemPool.Return(decomposedChar);
+            }
+        }
+
+        private static void AppendDecomposedItem(UCodepoint uc, bool compatMapping, UCodepoint[] decomposedChar, ref int cpCount)
+        {
+            UCodepoint[] ucDecomp = UnicodeData.GetDecomposition(uc, compatMapping);
+            if (ucDecomp != null)
+            {
+                Array.Copy(ucDecomp, 0, decomposedChar, cpCount, ucDecomp.Length);
+                cpCount += ucDecomp.Length;
+            }
+            else if (uc < SBase || uc > SEnd)
+                decomposedChar[cpCount++] = uc; // Not a Hangul syllable
+            else
+                AppendDecomposeHangul(uc, decomposedChar, ref cpCount);
+        }
+
+        /// <summary>
+        /// Decomposes a Hangul syllable into its components and appends them to the list.
+        /// </summary>
+        /// <remarks>Algorithm taken from https://www.unicode.org/standard/reports/tr15/tr15-21.html </remarks>
+        private static void AppendDecomposeHangul(UCodepoint uc, UCodepoint[] decomposedChar, ref int cpCount)
+        {
+            int syllableSIndex = (int)uc - SBase;
+            int syllableLIndex = syllableSIndex / NCount;
+            int syllableVIndex = (syllableSIndex % NCount) / TCount;
+            int syllableTIndex = syllableSIndex % TCount;
+
+            decomposedChar[cpCount++] = (UCodepoint)(LBase + syllableLIndex);
+            decomposedChar[cpCount++] = (UCodepoint)(VBase + syllableVIndex);
+            
+            if (syllableTIndex > 0)
+                decomposedChar[cpCount++] = (UCodepoint)(TBase + syllableTIndex);
+        }
+
+        private static UString NormalizeFormC(UString ustr, bool compatMapping)
         {
             if (ustr.Length == 0)
                 return ustr;
 
             using (UStringBuilder decomposedSb = new UStringBuilder(ustr.Length * 5 / 4))
             {
-                NormalizeFormDToSB(ustr, decomposedSb);
-                
-                using (UStringBuilder resultSb = new UStringBuilder(decomposedSb.Length, decomposedSb.Length))
+                DecomposeToSB(ustr, compatMapping, decomposedSb);
+                return ComposeFromSB(decomposedSb);
+            }
+        }
+
+        private static UString ComposeFromSB(UStringBuilder decomposedSb)
+        {
+            using (UStringBuilder resultSb = new UStringBuilder(decomposedSb.Length, decomposedSb.Length))
+            {
+                UCodepoint ucStarter = decomposedSb[0];
+                resultSb[0] = ucStarter;
+                int starterIndex = 0;
+                int lastCombiningClass = -1;
+                int targetIndex = 1;
+                for (int i = 1; i < decomposedSb.Length; i++)
                 {
-                    UCodepoint ucStarter = decomposedSb[0];
-                    resultSb[0] = ucStarter;
-                    int starterIndex = 0;
-                    int lastCombiningClass = -1;
-                    int targetIndex = 1;
-                    for (int i = 1; i < decomposedSb.Length; i++)
+                    UCodepoint uc = decomposedSb[i];
+                    byte combiningClass = UnicodeData.GetCombiningClass(uc);
+                    UCodepoint composite;
+                    if (lastCombiningClass < combiningClass && 
+                        (composite = GetComposite(ucStarter, uc)) != UCodepoint.Null)
                     {
-                        UCodepoint uc = decomposedSb[i];
-                        byte combiningClass = UnicodeData.GetCombiningClass(uc);
-                        UCodepoint composite = GetComposite(ucStarter, uc);
-                        if (composite != UCodepoint.Null && lastCombiningClass < combiningClass)
-                        {
-                            resultSb[starterIndex] = composite;
-                            ucStarter = composite;
-                        }
-                        else if (combiningClass == 0)
-                        {
-                            starterIndex = targetIndex;
-                            ucStarter = uc;
-                            lastCombiningClass = -1;
-                            resultSb[targetIndex++] = uc;
-                        }
-                        else
-                        {
-                            lastCombiningClass = combiningClass;
-                            resultSb[targetIndex++] = uc;
-                        }
+                        resultSb[starterIndex] = composite;
+                        ucStarter = composite;
                     }
-
-                    resultSb.Length = targetIndex;
-
-                    return resultSb.ToUString();
+                    else if (combiningClass == 0)
+                    {
+                        starterIndex = targetIndex;
+                        ucStarter = uc;
+                        lastCombiningClass = -1;
+                        resultSb[targetIndex++] = uc;
+                    }
+                    else
+                    {
+                        lastCombiningClass = combiningClass;
+                        resultSb[targetIndex++] = uc;
+                    }
                 }
+
+                resultSb.Length = targetIndex;
+
+                return resultSb.ToUString();
             }
         }
 
@@ -116,100 +210,6 @@ namespace UnicodeHelper.Internal
 
             // Not Hangul, so look up in composition table
             return UnicodeData.GetComposition(ucStarter, ucCombining);
-        }
-        #endregion
-
-        #region Decomposition (NFD) methods
-        private static UString NormalizeFormD(UString ustr)
-        {
-            using (UStringBuilder sb = new UStringBuilder(ustr.Length * 5 / 4))
-            {
-                NormalizeFormDToSB(ustr, sb);
-                return sb.ToUString();
-            }
-        }
-
-        private static void NormalizeFormDToSB(UString ustr, UStringBuilder sb)
-        {
-            DecomposedItem[] decomposedItem = decomposedItemPool.Rent(32); // TODO: Figure out reasonable size
-            try
-            {
-                int itemCount = 0;
-                foreach (UCodepoint uc in ustr)
-                {
-                    if (UnicodeData.GetCombiningClass(uc) == 0 && itemCount > 0)
-                    {
-                        Array.Sort(decomposedItem, 0, itemCount);
-                        for (int i = 0; i < itemCount; i++)
-                            sb.Append(decomposedItem[i].Codepoint);
-
-                        itemCount = 0;
-                    }
-
-                    AppendDecomposedItem(uc, decomposedItem, ref itemCount);
-                }
-
-                Array.Sort(decomposedItem, 0, itemCount);
-                for (int i = 0; i < itemCount; i++)
-                    sb.Append(decomposedItem[i].Codepoint);
-            }
-            finally
-            {
-                decomposedItemPool.Return(decomposedItem);
-            }
-        }
-
-        private static void AppendDecomposedItem(UCodepoint uc, DecomposedItem[] decomposedItem, ref int itemCount)
-        {
-            UCodepoint[] decomposition = UnicodeData.GetDecomposition(uc);
-            if (decomposition != null)
-            {
-                foreach (UCodepoint decompUc in decomposition)
-                    AppendDecomposedItem(decompUc, decomposedItem, ref itemCount);
-            }
-            else if (uc < SBase || uc > SEnd)
-                decomposedItem[itemCount++] = new DecomposedItem(uc);
-            else
-                AppendDecomposeHangul(uc, decomposedItem, ref itemCount);
-
-        }
-
-        /// <summary>
-        /// Decomposes a Hangul syllable into its components and appends them to the list.
-        /// </summary>
-        /// <remarks>Algorithm taken from https://www.unicode.org/standard/reports/tr15/tr15-21.html </remarks>
-        private static void AppendDecomposeHangul(UCodepoint uc, DecomposedItem[] decomposedItem, ref int itemCount)
-        {
-            int syllableSIndex = (int)uc - SBase;
-            int syllableLIndex = syllableSIndex / NCount;
-            int syllableVIndex = (syllableSIndex % NCount) / TCount;
-            int syllableTIndex = syllableSIndex % TCount;
-
-            decomposedItem[itemCount++] = new DecomposedItem((UCodepoint)(LBase + syllableLIndex));
-            decomposedItem[itemCount++] = new DecomposedItem((UCodepoint)(VBase + syllableVIndex));
-            
-            if (syllableTIndex > 0)
-                decomposedItem[itemCount++] = new DecomposedItem((UCodepoint)(TBase + syllableTIndex));
-        }
-        #endregion
-    
-        #region DecomposedItem struct
-        private readonly struct DecomposedItem : IComparable<DecomposedItem>
-        {
-            public readonly UCodepoint Codepoint;
-
-            private readonly byte _combiningClass;
-
-            public DecomposedItem(UCodepoint codepoint)
-            {
-                Codepoint = codepoint;
-                _combiningClass = UnicodeData.GetCombiningClass(codepoint);
-            }
-
-            public int CompareTo(DecomposedItem other)
-            {
-                return _combiningClass.CompareTo(other._combiningClass);
-            }
         }
         #endregion
     }

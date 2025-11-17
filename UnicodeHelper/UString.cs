@@ -840,10 +840,12 @@ namespace UnicodeHelper
         }
         #endregion
         
+        #region Internal methods
         internal void CopyTo(UCodepoint[] array, int arrayIndex)
         {
             Array.Copy(_codepoints, _startIndex, array, arrayIndex, Length);
         }
+        #endregion
 
         #region UStringEnumerator class
         private sealed class UStringEnumerator : IEnumerator<UCodepoint>

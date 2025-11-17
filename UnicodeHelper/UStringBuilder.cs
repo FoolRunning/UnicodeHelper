@@ -172,6 +172,22 @@ namespace UnicodeHelper
         }
 
         /// <summary>
+        /// Appends an array of Unicode codepoints.
+        /// </summary>
+        public void Append(UCodepoint[] uCodepoints, int length)
+        {
+            // TODO: Write tests for this method
+            if (uCodepoints == null)
+                throw new ArgumentNullException(nameof(uCodepoints));
+            if (length < 0 || length > uCodepoints.Length)
+                throw new ArgumentOutOfRangeException(nameof(length));
+
+            EnsureCapacity(length);
+            Array.Copy(uCodepoints, 0, _codepoints, _length, length);
+            _length += length;
+        }
+
+        /// <summary>
         /// Appends a Unicode string.
         /// </summary>
         public void Append(UString ustr)

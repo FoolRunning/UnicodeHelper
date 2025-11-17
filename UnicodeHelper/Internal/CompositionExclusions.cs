@@ -6,11 +6,10 @@ using JetBrains.Annotations;
 
 namespace UnicodeHelper.Internal
 {
-    /// <summary>
-    /// 
-    /// </summary>
     /// <remarks>This class represents the data in the Unicode specification
     /// <see href="https://www.unicode.org/reports/tr44/#CompositionExclusions.txt">CompositionExclusions.txt</see></remarks>
+    /// <remarks>This class is designed to be used and thrown away since the data is only needed during the creation
+    /// of the composition mappings.</remarks>
     internal sealed class CompositionExclusions
     {
         #region Data fields

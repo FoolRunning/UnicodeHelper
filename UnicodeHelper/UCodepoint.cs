@@ -13,14 +13,14 @@ namespace UnicodeHelper
     {
         #region Data fields
         /// <summary>
+        /// Represents the smallest possible value for a <see cref="UCodepoint"/> (commonly called <c>null</c> or <c>zero</c>).
+        /// </summary>
+        public static readonly UCodepoint Null = new UCodepoint(0x0000);
+
+        /// <summary>
         /// Represents the largest possible value for a <see cref="UCodepoint"/>.
         /// </summary>
         public static readonly UCodepoint MaxValue = new UCodepoint(UnicodeData.MaxUnicodeCodepoint);
-
-        /// <summary>
-        /// Represents the smallest possible value for a <see cref="UCodepoint"/> representing <c>null</c>.
-        /// </summary>
-        public static readonly UCodepoint Null = new UCodepoint(0x0000);
 
         private readonly int _value;
         #endregion
