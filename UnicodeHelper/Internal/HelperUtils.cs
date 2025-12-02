@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 namespace UnicodeHelper.Internal
@@ -8,9 +7,6 @@ namespace UnicodeHelper.Internal
     {
         public static TextDirection DetermineDirection(IEnumerable<UCodepoint> codepoints)
         {
-            if (codepoints == null)
-                throw new ArgumentNullException(nameof(codepoints));
-
             bool inIsolate = false;
             foreach (UCodepoint uc in codepoints)
             {

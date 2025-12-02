@@ -5,3 +5,4 @@ _ReSharper.Caches/**
 *.user
 UnicodeHelper/Resources/UCD/**
 **/*.snk
+.idea/.idea.UnicodeHelper/**

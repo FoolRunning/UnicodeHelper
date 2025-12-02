@@ -726,6 +726,16 @@ namespace UnicodeHelper
         /// <summary>
         /// Converts this Unicode string into a standard .Net string from a substring of
         /// this Unicode string.
+        /// The portion starts at a specified character and continues to the end of the string.
+        /// </summary>
+        public string ToString(int start)
+        {
+            return ToString(start, Length - start);
+        }
+
+        /// <summary>
+        /// Converts this Unicode string into a standard .Net string from a substring of
+        /// this Unicode string.
         /// </summary>
         public string ToString(int start, int length)
         {

@@ -105,9 +105,13 @@ namespace UnicodeHelper
         {
             codepointArrayPool.Return(_codepoints);
             _codepoints = null;
+            _length = 0;
             GC.SuppressFinalize(this);
         }
 
+        /// <summary>
+        /// Finalizes an instance of the <see cref="UStringBuilder"/> class.
+        /// </summary>
         ~UStringBuilder()
         {
             codepointArrayPool.Return(_codepoints);
