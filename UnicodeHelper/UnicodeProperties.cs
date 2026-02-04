@@ -43,23 +43,10 @@ namespace UnicodeHelper
         public static void Init() { } // Just invokes the static constructor
 
         /// <summary>
-        /// Initializes UnicodeProperties using the files specified. The files must be in the default
-        /// Unicode standard format for a <c>PropList.txt</c> file and <c>DerivedCoreProperties.txt</c> file.
-        /// </summary>
-        public static void Init(string propsListDataFilePath, string derivedPropsDataFilePath)
-        {
-            DataHelper.ReadDataFile(propsListDataFilePath, propsListTextReader =>
-            {
-                DataHelper.ReadDataFile(derivedPropsDataFilePath, derivedPropsDataTextReader =>
-                    Init(propsListTextReader, derivedPropsDataTextReader));
-            });
-        }
-
-        /// <summary>
         /// Initializes UnicodeBlocks using the specified reader. The data must be in the default
         /// Unicode standard format for a <c>PropList.txt</c> file and <c>DerivedCoreProperties.txt</c> file.
         /// </summary>
-        public static void Init(TextReader propsListTextReader, TextReader derivedPropsTextReader)
+        private static void Init(TextReader propsListTextReader, TextReader derivedPropsTextReader)
         {
             // Load Unicode defaults
             for (int i = 0; i < props.Length; i++)

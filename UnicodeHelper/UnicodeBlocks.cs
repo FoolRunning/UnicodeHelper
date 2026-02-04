@@ -38,19 +38,10 @@ namespace UnicodeHelper
         public static void Init() { } // Just invokes the static constructor
 
         /// <summary>
-        /// Initializes UnicodeBlocks using the file specified. The file must be in the default
-        /// Unicode standard format for a <c>Blocks.txt</c> file.
-        /// </summary>
-        public static void Init(string unicodeBlocksFilePath)
-        {
-            DataHelper.ReadDataFile(unicodeBlocksFilePath, Init);
-        }
-
-        /// <summary>
         /// Initializes UnicodeBlocks using the specified reader. The data must be in the default
         /// Unicode standard format for a <c>Blocks.txt</c> file.
         /// </summary>
-        public static void Init(TextReader textReader)
+        private static void Init(TextReader textReader)
         {
             using (CsvReader reader = new CsvReader(textReader, DataHelper.CsvConfiguration))
             {
@@ -60,9 +51,8 @@ namespace UnicodeHelper
                     int startCodePoint = int.Parse(range[0], NumberStyles.HexNumber);
                     int endCodePoint = int.Parse(range[1], NumberStyles.HexNumber);
                     string blockName = line.BlockName.Trim();
-                    
-                    for (int c = startCodePoint; c <= endCodePoint; c++)
-                        blocks.Add(new BlockRange((UCodepoint)startCodePoint, (UCodepoint)endCodePoint, blockName));
+
+                    blocks.Add(new BlockRange((UCodepoint)startCodePoint, (UCodepoint)endCodePoint, blockName));
                 }
             }
         }

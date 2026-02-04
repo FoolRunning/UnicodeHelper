@@ -61,19 +61,10 @@ namespace UnicodeHelper
         public static void Init() { } // Just invokes the static constructor
 
         /// <summary>
-        /// Initializes UnicodeData using the file specified. The file must be in the default
-        /// Unicode standard format for a <c>UnicodeData.txt</c> file.
-        /// </summary>
-        public static void Init(string unicodeDataFilePath)
-        {
-            DataHelper.ReadDataFile(unicodeDataFilePath, Init);
-        }
-
-        /// <summary>
         /// Initializes UnicodeData using the specified reader. The data must be in the default
         /// Unicode standard format for a <c>UnicodeData.txt</c> file.
         /// </summary>
-        public static void Init(TextReader textReader)
+        private static void Init(TextReader textReader)
         {
             // Load defaults for categories
             for (int i = 0; i < categories.Length; i++)
@@ -156,7 +147,7 @@ namespace UnicodeHelper
         /// <summary>
         /// The supported Unicode version of the built-in data
         /// </summary>
-        public static Version UnicodeVersion => new Version(16, 0, 0);
+        public static Version UnicodeVersion => new Version(17, 0, 0);
         #endregion
 
         #region Internal methods

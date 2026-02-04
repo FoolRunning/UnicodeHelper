@@ -68,12 +68,12 @@ namespace UnicodeHelper
             return new UCodepoint(c);
         }
 
-        internal UCodepoint(char value)
+        private UCodepoint(char value)
         {
             _value = value;
         }
 
-        internal UCodepoint(int value)
+        private UCodepoint(int value)
         {
             _value = value;
         }

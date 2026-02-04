@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using UnicodeHelper.Internal;
@@ -14,7 +15,7 @@ namespace UnicodeHelper
     [PublicAPI]
     public sealed class UString : 
         IEquatable<UString>, 
-        IEnumerable<UCodepoint>,
+        IReadOnlyList<UCodepoint>,
         ICloneable,
         IComparable,
         IComparable<UString>
@@ -29,7 +30,7 @@ namespace UnicodeHelper
         /// <summary>Index of the codepoint in the array where this string starts (for a substring)</summary>
         private readonly int _startIndex;
 
-        private int _cachedHash;
+        private int? _cachedHash;
         #endregion
 
         #region Constructors
@@ -87,20 +88,36 @@ namespace UnicodeHelper
             if (startIndex + count > dotNetString.Length)
                 throw new ArgumentException("startIndex and count must reside in the string");
 
-            UCodepoint[] codepoints = new UCodepoint[count];
-            int index = 0;
+            // Memory allocation and copying is slow enough that it's slightly faster to calculate the correct size
+            // than it is to guess and resize when finished.
             int end = startIndex + count;
+            int totalCodePointCount = 0;
+            for (int i = startIndex; i < end; i++)
+            {
+                totalCodePointCount++;
+                if (char.IsHighSurrogate(dotNetString[i]))
+                {
+                    int nextIndex = i + 1;
+                    if (nextIndex < end && char.IsLowSurrogate(dotNetString[nextIndex]))
+                        i++; // Step over low surrogate
+                }
+            }
+
+            UCodepoint[] codepoints = new UCodepoint[totalCodePointCount];
+            int codePointIndex = 0;
             for (int i = startIndex; i < end; i++)
             {
                 UCodepoint uc = UCodepoint.ReadFromStr(dotNetString, i);
-                codepoints[index++] = uc;
+                codepoints[codePointIndex++] = uc;
                 if (uc > 0xFFFF)
                     i++; // Step over low surrogate
             }
 
+            Debug.Assert(totalCodePointCount == codePointIndex, "Precalculation of size was incorrect");
+
             _codepoints = codepoints;
             _startIndex = 0;
-            Length = index;
+            Length = totalCodePointCount;
         }
 
         internal UString(int start, int length, UCodepoint[] codepoints)
@@ -138,6 +155,13 @@ namespace UnicodeHelper
                 return charCount;
             }
         }
+        #endregion
+
+        #region Implementation of IReadOnlyList
+        /// <summary>
+        /// Gets the number of Unicode codepoints that make up this Unicode string
+        /// </summary>
+        public int Count => Length;
 
         /// <summary>
         /// Gets the Unicode codepoint at the specified index in this Unicode string
@@ -440,7 +464,7 @@ namespace UnicodeHelper
         /// </summary>
         public int LastIndexOf(UCodepoint value)
         {
-            return LastIndexOf(value, Length - 1, Length);
+            return Length == 0 ? -1 : LastIndexOf(value, Length - 1, Length);
         }
 
         /// <summary>
@@ -464,6 +488,8 @@ namespace UnicodeHelper
                 throw new ArgumentOutOfRangeException(nameof(count), "count is less than zero");
             if (startIndex >= Length)
                 throw new ArgumentOutOfRangeException(nameof(startIndex), "startIndex must be less than the length of the string");
+            if (startIndex < 0)
+                throw new ArgumentOutOfRangeException(nameof(startIndex), "startIndex must be greater than zero");
             if (startIndex - count + 1 < 0)
                 throw new ArgumentException("StartIndex and count must reside in the string");
 
@@ -782,15 +808,17 @@ namespace UnicodeHelper
         public override int GetHashCode()
         {
             // TODO: Write tests for this method
-            if (_cachedHash != 0)
-                return _cachedHash;
-            
-            HashCode hc = new HashCode();
-            int end = _startIndex + Length;
-            for (int i = _startIndex; i < end; i++)
-                hc.Add(_codepoints[i]);
+            if (_cachedHash == null)
+            {
+                HashCode hc = new HashCode();
+                int end = _startIndex + Length;
+                for (int i = _startIndex; i < end; i++)
+                    hc.Add(_codepoints[i]);
 
-            return _cachedHash = hc.ToHashCode();
+                _cachedHash = hc.ToHashCode();
+            }
+
+            return _cachedHash.Value;
         }
 
         /// <inheritdoc />

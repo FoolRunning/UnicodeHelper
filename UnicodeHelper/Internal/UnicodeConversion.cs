@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 
@@ -155,28 +156,31 @@ namespace UnicodeHelper.Internal
 
         public static UnicodeCategory ConvertCategory(string categoryStr)
         {
-            return strToCategoryMap[categoryStr];
+            return strToCategoryMap.TryGetValue(categoryStr, out UnicodeCategory cat) ? cat : 
+                throw new ArgumentException("Unknown category " + categoryStr);
         }
 
         public static UnicodeBidiClass ConvertBidiClass(string bidiClassStr)
         {
-            return strToBidiClassMap[bidiClassStr];
+            return strToBidiClassMap.TryGetValue(bidiClassStr, out UnicodeBidiClass bidiClass) ? bidiClass : 
+                throw new ArgumentException("Unknown bi-di class " + bidiClassStr);
         }
 
         public static UnicodeProperty ConvertProperty(string propertyStr)
         {
-            return strToPropertyMap[propertyStr];
+            return strToPropertyMap.TryGetValue(propertyStr, out UnicodeProperty prop) ? prop : 
+                throw new ArgumentException("Unknown property " + propertyStr);
         }
 
         public static double ConvertNumeric(string numericStr)
         {
             string[] numbers = numericStr.Split('/');
-            double value = double.Parse(numbers[0]);
+            double value = double.Parse(numbers[0], CultureInfo.InvariantCulture);
             if (numbers.Length == 1) 
                 return value;
 
             Debug.Assert(numbers.Length == 2);
-            double bottom = double.Parse(numbers[1]);
+            double bottom = double.Parse(numbers[1], CultureInfo.InvariantCulture);
             return value / bottom;
         }
     }

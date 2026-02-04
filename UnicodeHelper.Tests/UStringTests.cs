@@ -309,12 +309,13 @@ namespace UnicodeHelper
         #region LastIndexOf_UCodepoint tests
         private static IEnumerable<object[]> UCodepointLastIndexOfExceptionTestData =>
         [
+            ["", 0, 0, typeof(ArgumentOutOfRangeException)],
             ["", 0, 1, typeof(ArgumentOutOfRangeException)],
             ["", 1, 0, typeof(ArgumentOutOfRangeException)],
-            ["This", -1, 2, typeof(ArgumentException)],
+            ["This", -1, 2, typeof(ArgumentOutOfRangeException)],
             ["This", 3, 5, typeof(ArgumentException)],
             ["This", 3, -1, typeof(ArgumentOutOfRangeException)],
-            ["This", -1, 1, typeof(ArgumentException)],
+            ["This", -1, 1, typeof(ArgumentOutOfRangeException)],
             ["😁🤔😮", 1, 3, typeof(ArgumentException)],
             ["😁🤔😮", 3, 1, typeof(ArgumentOutOfRangeException)]
         ];
@@ -330,11 +331,10 @@ namespace UnicodeHelper
 
         private static IEnumerable<object[]> UCodepointLastIndexOfTestData =>
         [
-            ["", (UCodepoint)'A', -1, 0, -1],
             ["This is\r\na test!", (UCodepoint)'\r', 8, 6, 7],
             ["This is\r\na test!", (UCodepoint)'i', 15, 16, 5],
             ["This is\r\na test!", (UCodepoint)'T', 8, 6, -1],
-            ["This", (UCodepoint)'T', -1, 0, -1],
+            ["This", (UCodepoint)'T', 0, 0, -1],
             ["This", (UCodepoint)'s', 3, 0, -1],
             ["This", (UCodepoint)'i', 2, 0, -1],
             ["العربية", (UCodepoint)'ا', 6, 7, 0],

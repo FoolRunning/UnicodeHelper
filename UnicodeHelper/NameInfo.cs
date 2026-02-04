@@ -6,7 +6,7 @@ namespace UnicodeHelper
     /// Contains name information about a character
     /// </summary>
     [PublicAPI]
-    public sealed class NameInfo
+    public readonly struct NameInfo
     {
         internal NameInfo(string name, NameType nameType)
         {
