@@ -43,6 +43,9 @@ namespace UnicodeHelper
         /// </summary>
         public UStringBuilder(int startingCapacity)
         {
+            if (startingCapacity < 0)
+                throw new ArgumentException("capacity must be greater than or equal to zero", nameof(startingCapacity));
+
             if (startingCapacity < DefaultCapacity)
                 startingCapacity = DefaultCapacity;
 
@@ -62,7 +65,7 @@ namespace UnicodeHelper
         /// <see cref="UString"/> and starting capacity.
         /// </summary>
         public UStringBuilder(UString ustr, int startingCapacity) : 
-            this(startingCapacity < ustr.Length ? ustr.Length : startingCapacity)
+            this(ustr != null && startingCapacity < ustr.Length ? ustr.Length : startingCapacity)
         {
             Append(ustr);
         }
@@ -80,7 +83,7 @@ namespace UnicodeHelper
         /// .Net string and starting capacity.
         /// </summary>
         public UStringBuilder(string str, int startingCapacity) :
-            this(startingCapacity < str.Length ? str.Length : startingCapacity)
+            this(str != null && startingCapacity < str.Length ? str.Length : startingCapacity)
         {
             Append(str);
         }
@@ -103,6 +106,9 @@ namespace UnicodeHelper
         /// </remarks>
         public void Dispose()
         {
+            if (_codepoints == null)
+                return; // Already disposed
+
             codepointArrayPool.Return(_codepoints);
             _codepoints = null;
             _length = 0;

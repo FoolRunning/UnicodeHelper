@@ -731,6 +731,100 @@ namespace UnicodeHelper
         }
         #endregion
 
+        #region CompareTo tests
+        private static IEnumerable<object[]> CompareToTestData =>
+        [
+            ["", "", 0],
+            ["a", "a", 0],
+            ["a", "b", -1],
+            ["b", "a", 1],
+            ["ab", "abc", -1],
+            ["abc", "ab", 1],
+            ["abc", "ABC", 1]
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(CompareToTestData))]
+        public void CompareTo(string string1, string string2, int expectedResult)
+        {
+            UString us1 = new(string1);
+            UString us2 = new(string2);
+
+            switch (expectedResult)
+            {
+                case > 0:
+                    Assert.IsGreaterThan(0, us1.CompareTo(us2));
+                    Assert.IsGreaterThan(0, ((IComparable)us1).CompareTo(us2));
+                    break;
+                case < 0:
+                    Assert.IsLessThan(0, us1.CompareTo(us2));
+                    Assert.IsLessThan(0, ((IComparable)us1).CompareTo(us2));
+                    break;
+                default:
+                    Assert.AreEqual(0, us1.CompareTo(us2));
+                    Assert.AreEqual(0, ((IComparable)us1).CompareTo(us2));
+                    break;
+            }
+        }
+        #endregion
+
+        #region Clone tests
+        [TestMethod]
+        public void Clone()
+        {
+            UString original = new("test");
+            object cloned = original.Clone();
+            
+            Assert.IsInstanceOfType(cloned, typeof(UString));
+            Assert.AreEqual(original, cloned);
+            Assert.AreNotSame(original, cloned); // Should be different objects
+        }
+
+        [TestMethod]
+        public void Clone_Substring()
+        {
+            UString original = CreateTestSubstring("test");
+            object cloned = original.Clone();
+            
+            Assert.IsInstanceOfType(cloned, typeof(UString));
+            Assert.AreEqual(original, cloned);
+            Assert.AreNotSame(original, cloned); // Should be different objects
+
+            UString expected = new("test");
+            Assert.AreEqual(expected, cloned);
+        }
+        #endregion
+
+        #region GetHashCode tests
+        private static IEnumerable<object[]> GetHashCodeTestData =>
+        [
+            [""],
+            ["a"],
+            ["ab"],
+            ["Hello"],
+            ["😁🤔😮"]
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(GetHashCodeTestData))]
+        public void GetHashCode(string testString)
+        {
+            UString us1 = new(testString);
+            
+            // Test that GetHash code for same content is consistent
+            int hash1 = us1.GetHashCode();
+            int hash2 = us1.GetHashCode();
+            Assert.AreEqual(hash1, hash2); // Same instance should always give same hash
+
+            UString us2 = new(testString);
+            Assert.AreEqual(hash1, us2.GetHashCode()); // Same contents should always give same hash
+
+            // For different strings with same content (substring vs full), the hash should be same
+            UString sub = CreateTestSubstring(testString);
+            Assert.AreEqual(us1.GetHashCode(), sub.GetHashCode());
+        }
+        #endregion
+
         #region Normalization tests
         [TestMethod]
         public void Normalization_FormC()

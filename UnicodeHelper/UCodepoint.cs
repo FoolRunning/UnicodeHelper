@@ -128,7 +128,7 @@ namespace UnicodeHelper
             return UnicodeData.GetBidiClass(uc);
         }
 
-        // TODO: Should this be here for convenience or stay only in UnicodeProperties?
+        // REVIEW: Should this be here for convenience or stay only in UnicodeProperties?
         //public static UnicodeProperty GetProperties(UCodepoint uc)
         //{
         //    return UnicodeProperties.GetProps(uc);
