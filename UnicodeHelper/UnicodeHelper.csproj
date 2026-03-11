@@ -7,7 +7,7 @@
     <RunAnalyzersDuringLiveAnalysis>False</RunAnalyzersDuringLiveAnalysis>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>Unicode Helper</Title>
-    <Version>0.9.3</Version>
+    <Version>1.0.0</Version>
     <Authors>FoolRunning</Authors>
     <Description>.Net library to get information about Unicode codepoints and to better handle the upper planes (1-16) of Unicode.</Description>
     <Copyright>© 2025 Tim Steenwyk</Copyright>
@@ -21,7 +21,7 @@
     <DelaySign>False</DelaySign>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <PackageReleaseNotes>Fixed a bunch of small issues and some general improvements found by Claude Code.</PackageReleaseNotes>
+    <PackageReleaseNotes>Implemented the remaining UString methods.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
@@ -45,7 +45,7 @@
 
   <ItemGroup>
     <PackageReference Include="CsvHelper" Version="33.1.0" />
-    <PackageReference Include="JetBrains.Annotations" Version="2025.2.2">
+    <PackageReference Include="JetBrains.Annotations" Version="2025.2.4">
 	  <PrivateAssets>all</PrivateAssets>
 	</PackageReference>
     <PackageReference Include="Microsoft.Bcl.HashCode" Version="6.0.0" />

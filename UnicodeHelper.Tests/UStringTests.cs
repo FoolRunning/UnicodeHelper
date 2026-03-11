@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using UnicodeHelper.TestData;
 
+// ReSharper disable ObjectCreationAsStatement
 namespace UnicodeHelper
 {
     [TestClass]
@@ -32,8 +33,74 @@ namespace UnicodeHelper
                     "Characters differ at index " + i);
             }
         }
+
+        private static IEnumerable<object[]> ConstructorCodepointListExceptionTestData =>
+        [
+            [new List<UCodepoint>(), -1, 0, typeof(ArgumentOutOfRangeException)],
+            [new List<UCodepoint>(), 0, -1, typeof(ArgumentOutOfRangeException)],
+            [new List<UCodepoint>(), 0, 1, typeof(ArgumentException)],
+            [new List<UCodepoint> { 'a', 'b' }, 1, 2, typeof(ArgumentException)],
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(ConstructorCodepointListExceptionTestData))]
+        public void Constructor_CodepointList_InvalidParameters(List<UCodepoint> codepoints,
+            int startIndex, int count, Type expectedExceptionType)
+        {
+            Assert.That.ThrowsException(expectedExceptionType,
+                () => new UString(codepoints, startIndex, count));
+        }
+
+        [TestMethod]
+        public void Constructor_CodepointList_NullThrows()
+        {
+            Assert.That.ThrowsException(typeof(ArgumentNullException),
+                () => new UString((IReadOnlyList<UCodepoint>?)null, 0, 0));
+        }
+
+        private static IEnumerable<object[]> ConstructorCodepointListTestData =>
+        [
+            [""],
+            ["This is\r\na test!", "T", "h", "i", "s", " ", "i", "s", "\r", "\n", "a", " ", "t", "e", "s", "t", "!"],
+            ["العربية", "ا", "ل", "ع", "ر", "ب", "ي", "ة"],
+            ["😁🤔😮", "😁", "🤔", "😮"]
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(ConstructorCodepointListTestData))]
+        public void Constructor_CodepointList(string testString, params string[] expectedCodepoints)
+        {
+            UString temp = new(testString);
+            List<UCodepoint> codepoints = temp.ToList();
+
+            UString us = new(codepoints);
+            Assert.AreEqual(testString, us.ToString());
+            Assert.AreEqual(expectedCodepoints.Length, us.Length);
+            for (int i = 0; i < expectedCodepoints.Length; i++)
+                Assert.AreEqual(UCodepoint.ReadFromStr(expectedCodepoints[i], 0), us[i], "Characters differ at index " + i);
+        }
+
+        private static IEnumerable<object[]> ConstructorCodepointListWithRangeTestData =>
+        [
+            ["This is a test!", 5, 2, "is"],
+            ["العربية", 2, 3, "عرب"],
+            ["😁🤔😮", 1, 2, "🤔😮"],
+            ["Hello", 0, 5, "Hello"],
+            ["Hello", 2, 0, ""],
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(ConstructorCodepointListWithRangeTestData))]
+        public void Constructor_CodepointList_WithRange(string testString, int startIndex, int count, string expectedResult)
+        {
+            UString temp = new(testString);
+            List<UCodepoint> codepoints = temp.ToList();
+
+            UString us = new(codepoints, startIndex, count);
+            Assert.AreEqual(new UString(expectedResult), us);
+        }
         #endregion
-        
+
         #region CharLength tests
         private static IEnumerable<object[]> CharLengthTestData =>
         [
@@ -306,6 +373,54 @@ namespace UnicodeHelper
         }
         #endregion
 
+        #region IndexOf_UString tests
+        private static IEnumerable<object[]> UStringIndexOfExceptionTestData =>
+        [
+            ["", "a", -1, 0, typeof(ArgumentOutOfRangeException)],
+            ["", "a", 0, 1, typeof(ArgumentException)],
+            ["This", "a", 0, -1, typeof(ArgumentOutOfRangeException)],
+            ["This", "a", -1, 2, typeof(ArgumentOutOfRangeException)],
+            ["This", "a", 4, 1, typeof(ArgumentException)],
+            ["This", "a", 0, 5, typeof(ArgumentException)],
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(UStringIndexOfExceptionTestData))]
+        public void IndexOf_UString_InvalidParameters(string testString, string value, int startIndex, int count,
+            Type expectedExceptionType)
+        {
+            UString us = new(testString);
+            UString searchValue = new(value);
+            Assert.That.ThrowsException(expectedExceptionType, () => us.IndexOf(searchValue, startIndex, count));
+        }
+
+        private static IEnumerable<object[]> UStringIndexOfTestData =>
+        [
+            ["This is a test!", "is", 0, 15, 2],
+            ["This is a test!", "is", 3, 12, 5],
+            ["This is a test!", "test", 0, 15, 10],
+            ["This is a test!", "xyz", 0, 15, -1],
+            ["This is a test!", "This is a test!", 0, 15, 0],
+            ["This is a test!", "is", 6, 9, -1],
+            ["العربية", "رب", 0, 7, 3],
+            ["😁🤔😮", "🤔😮", 0, 3, 1],
+            ["😁🤔😮", "😁", 1, 2, -1],
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(UStringIndexOfTestData))]
+        public void IndexOf_UString(string testString, string value, int startIndex, int count, int expectedResult)
+        {
+            UString us = new(testString);
+            UString searchValue = new(value);
+            Assert.AreEqual(expectedResult, us.IndexOf(searchValue, startIndex, count));
+
+            // Test making sure that a substring results in the correct result
+            us = CreateTestSubstring(testString);
+            Assert.AreEqual(expectedResult, us.IndexOf(searchValue, startIndex, count));
+        }
+        #endregion
+
         #region LastIndexOf_UCodepoint tests
         private static IEnumerable<object[]> UCodepointLastIndexOfExceptionTestData =>
         [
@@ -357,7 +472,52 @@ namespace UnicodeHelper
         }
         #endregion
 
-        #region StartsWith_UCodepoint tests        
+        #region LastIndexOf_UString tests
+        private static IEnumerable<object[]> UStringLastIndexOfExceptionTestData =>
+        [
+            ["", "a", 0, 0, typeof(ArgumentOutOfRangeException)],
+            ["This", "a", -1, 2, typeof(ArgumentOutOfRangeException)],
+            ["This", "a", 4, 1, typeof(ArgumentOutOfRangeException)],
+            ["This", "a", 3, -1, typeof(ArgumentOutOfRangeException)],
+            ["This", "a", 3, 5, typeof(ArgumentException)],
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(UStringLastIndexOfExceptionTestData))]
+        public void LastIndexOf_UString_InvalidParameters(string testString, string value, int startIndex, int count,
+            Type expectedExceptionType)
+        {
+            UString us = new(testString);
+            UString searchValue = new(value);
+            Assert.That.ThrowsException(expectedExceptionType, () => us.LastIndexOf(searchValue, startIndex, count));
+        }
+
+        private static IEnumerable<object[]> UStringLastIndexOfTestData =>
+        [
+            ["This is a test!", "is", 14, 15, 5],
+            ["This is a test!", "is", 4, 5, 2],
+            ["This is a test!", "xyz", 14, 15, -1],
+            ["This is a test!", "This", 14, 15, 0],
+            ["العربية", "رب", 6, 7, 3],
+            ["😁🤔😮", "🤔", 2, 3, 1],
+            ["😁🤔😮", "😮", 1, 2, -1],
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(UStringLastIndexOfTestData))]
+        public void LastIndexOf_UString(string testString, string value, int startIndex, int count, int expectedResult)
+        {
+            UString us = new(testString);
+            UString searchValue = new(value);
+            Assert.AreEqual(expectedResult, us.LastIndexOf(searchValue, startIndex, count));
+
+            // Test making sure that a substring results in the correct result
+            us = CreateTestSubstring(testString);
+            Assert.AreEqual(expectedResult, us.LastIndexOf(searchValue, startIndex, count));
+        }
+        #endregion
+
+        #region StartsWith_UCodepoint tests
         private static IEnumerable<object[]> UCodepointStartsWithTestData =>
         [
             ["", (UCodepoint)'A', true, false],
@@ -384,6 +544,39 @@ namespace UnicodeHelper
             // Test making sure that a substring results in the correct result
             us = CreateTestSubstring(testString);
             Assert.AreEqual(expectedResult, us.StartsWith(codePoint, ignoreCase));
+        }
+        #endregion
+
+        #region StartsWith_UString tests
+        private static IEnumerable<object[]> UStringStartsWithTestData =>
+        [
+            ["", "a", false, false],
+            ["", "", false, true],
+            ["This is a test!", "This", false, true],
+            ["This is a test!", "this", false, false],
+            ["This is a test!", "this", true, true],
+            ["This is a test!", "test!", false, false],
+            ["This is a test!", "This is a test!", false, true],
+            ["العربية", "العر", false, true],
+            ["العربية", "ية", false, false],
+            ["😁🤔😮", "😁🤔", false, true],
+            ["😁🤔😮", "🤔😮", false, false],
+            ["\U00010570\U00010597", "\U00010570", false, true],   // VITHKUQI letters
+            ["\U00010570\U00010597", "\U00010597", false, false],  // VITHKUQI letters
+            ["\U00010570\U00010597", "\U00010597", true, true],    // VITHKUQI case-insensitive
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(UStringStartsWithTestData))]
+        public void StartsWith_UString(string testString, string value, bool ignoreCase, bool expectedResult)
+        {
+            UString us = new(testString);
+            UString searchValue = new(value);
+            Assert.AreEqual(expectedResult, us.StartsWith(searchValue, ignoreCase));
+
+            // Test making sure that a substring results in the correct result
+            us = CreateTestSubstring(testString);
+            Assert.AreEqual(expectedResult, us.StartsWith(searchValue, ignoreCase));
         }
         #endregion
 
@@ -414,6 +607,103 @@ namespace UnicodeHelper
             // Test making sure that a substring results in the correct result
             us = CreateTestSubstring(testString);
             Assert.AreEqual(expectedResult, us.EndsWith(codePoint, ignoreCase));
+        }
+        #endregion
+
+        #region EndsWith_UString tests
+        private static IEnumerable<object[]> UStringEndsWithTestData =>
+        [
+            ["", "a", false, false],
+            ["", "", false, true],
+            ["This is a test!", "test!", false, true],
+            ["This is a test!", "TEST!", false, false],
+            ["This is a test!", "TEST!", true, true],
+            ["This is a test!", "This", false, false],
+            ["This is a test!", "This is a test!", false, true],
+            ["العربية", "بية", false, true],
+            ["العربية", "العر", false, false],
+            ["😁🤔😮", "🤔😮", false, true],
+            ["😁🤔😮", "😁🤔", false, false],
+            ["\U00010570\U00010597", "\U00010597", false, true],   // VITHKUQI letters
+            ["\U00010570\U00010597", "\U00010570", false, false],  // VITHKUQI letters
+            ["\U00010570\U00010597", "\U00010570", true, true],    // VITHKUQI case-insensitive
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(UStringEndsWithTestData))]
+        public void EndsWith_UString(string testString, string value, bool ignoreCase, bool expectedResult)
+        {
+            UString us = new(testString);
+            UString searchValue = new(value);
+            Assert.AreEqual(expectedResult, us.EndsWith(searchValue, ignoreCase));
+
+            // Test making sure that a substring results in the correct result
+            us = CreateTestSubstring(testString);
+            Assert.AreEqual(expectedResult, us.EndsWith(searchValue, ignoreCase));
+        }
+        #endregion
+
+        #region Contains_UCodepoint tests
+        private static IEnumerable<object[]> UCodepointContainsTestData =>
+        [
+            ["", (UCodepoint)'a', false, false],
+            ["This is a test!", (UCodepoint)'i', false, true],
+            ["This is a test!", (UCodepoint)'z', false, false],
+            ["This is a test!", (UCodepoint)'T', false, true],
+            ["this is a test!", (UCodepoint)'T', false, false],
+            ["this is a test!", (UCodepoint)'T', true, true],
+            ["This is a test!", (UCodepoint)'t', true, true],
+            ["العربية", (UCodepoint)'ر', false, true],
+            ["العربية", (UCodepoint)'ص', false, false],
+            ["😁🤔😮", UCodepoint.ReadFromStr("🤔", 0), false, true],
+            ["😁🤔😮", UCodepoint.ReadFromStr("🎉", 0), false, false],
+            ["\U00010570\U00010597", UCodepoint.ReadFromStr("\U00010570", 0), false, true],  // VITHKUQI letters
+            ["\U00010570\U00010597", UCodepoint.ReadFromStr("\U00010597", 0), true, true],   // VITHKUQI case-insensitive
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(UCodepointContainsTestData))]
+        public void Contains_UCodepoint(string testString, UCodepoint codePoint, bool ignoreCase, bool expectedResult)
+        {
+            UString us = new(testString);
+            Assert.AreEqual(expectedResult, us.Contains(codePoint, ignoreCase));
+
+            // Test making sure that a substring results in the correct result
+            us = CreateTestSubstring(testString);
+            Assert.AreEqual(expectedResult, us.Contains(codePoint, ignoreCase));
+        }
+        #endregion
+
+        #region Contains_UString tests
+        private static IEnumerable<object[]> UStringContainsTestData =>
+        [
+            ["", "a", false, false],
+            ["", "", false, true],
+            ["This is a test!", "is", false, true],
+            ["This is a test!", "xyz", false, false],
+            ["This is a test!", "IS", false, false],
+            ["This is a test!", "IS", true, true],
+            ["This is a test!", "This is a test!", false, true],
+            ["العربية", "رب", false, true],
+            ["العربية", "صف", false, false],
+            ["😁🤔😮", "🤔😮", false, true],
+            ["😁🤔😮", "😮😁", false, false],
+            ["\U00010570\U00010597", "\U00010597", false, true],            // VITHKUQI letters
+            ["\U00010570\U00010597", "\U00010570\U00010570", false, false], // VITHKUQI letters
+            ["\U00010570\U00010597", "\U00010570\U00010570", true, true],   // VITHKUQI case-insensitive
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(UStringContainsTestData))]
+        public void Contains_UString(string testString, string value, bool ignoreCase, bool expectedResult)
+        {
+            UString us = new(testString);
+            UString searchValue = new(value);
+            Assert.AreEqual(expectedResult, us.Contains(searchValue, ignoreCase));
+
+            // Test making sure that a substring results in the correct result
+            us = CreateTestSubstring(testString);
+            Assert.AreEqual(expectedResult, us.Contains(searchValue, ignoreCase));
         }
         #endregion
 

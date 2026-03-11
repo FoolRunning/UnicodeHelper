@@ -47,7 +47,6 @@ namespace UnicodeHelper
         /// </summary>
         public UString(IReadOnlyList<UCodepoint> codepoints, int startIndex, int count)
         {
-            // TODO: Write tests for this constructor
             if (codepoints == null)
                 throw new ArgumentNullException(nameof(codepoints));
             if (startIndex < 0)
@@ -206,7 +205,6 @@ namespace UnicodeHelper
         /// <inheritdoc />
         public object Clone()
         {
-            // TODO: Write tests for this method
             // Since this class is immutable, just reuse the same underlying data.
             return new UString(_startIndex, Length, _codepoints);
         }
@@ -231,7 +229,6 @@ namespace UnicodeHelper
         /// </summary>
         public int CompareTo(UString other)
         {
-            // TODO: Write tests for this method
             int minLength = Math.Min(Length, other.Length);
             int end = _startIndex + minLength;
             int otherIndex = other._startIndex;
@@ -437,7 +434,7 @@ namespace UnicodeHelper
 
         /// <summary>
         /// Finds the zero-based index of the first occurrence of the specified Unicode codepoint in this string.
-        /// The search starts at a specified codepoint position and examines a specified number of codepoint positions.
+        /// The search starts at a specified codepoint position and examines the specified number of codepoint positions.
         /// </summary>
         public int IndexOf(UCodepoint value, int startIndex, int count)
         {
@@ -504,57 +501,120 @@ namespace UnicodeHelper
             return -1;
         }
 
+        /// <summary>
+        /// Finds the zero-based index of the first occurrence of the specified Unicode string in this string.
+        /// </summary>
         public int IndexOf(UString value)
         {
             return IndexOf(value, 0, Length);
         }
 
+        /// <summary>
+        /// Finds the zero-based index of the first occurrence of the specified Unicode string in this string.
+        /// The search starts at a specified codepoint position.
+        /// </summary>
         public int IndexOf(UString value, int startIndex)
         {
             return IndexOf(value, startIndex, Length - startIndex);
         }
 
+        /// <summary>
+        /// Finds the zero-based index of the first occurrence of the specified Unicode string in this string.
+        /// The search starts at a specified codepoint position and examines the specified number of codepoint positions.
+        /// </summary>
         public int IndexOf(UString value, int startIndex, int count)
         {
-            //if (value == null)
-            //    throw new ArgumentNullException(nameof(value));
-            //if (startIndex < 0)
-            //    throw new ArgumentOutOfRangeException(nameof(startIndex), "startIndex is less than zero");
-            //if (count < 0)
-            //    throw new ArgumentOutOfRangeException(nameof(count), "count is less than zero");
-            //if (startIndex + count > Length)
-            //    throw new ArgumentException("StartIndex and count must reside in the string");
+            if (startIndex < 0)
+                throw new ArgumentOutOfRangeException(nameof(startIndex), "startIndex is less than zero");
+            if (count < 0)
+                throw new ArgumentOutOfRangeException(nameof(count), "count is less than zero");
+            if (startIndex + count > Length)
+                throw new ArgumentException("StartIndex and count must reside in the string");
 
-            ////if (startIndex + value.Length)
+            if (value.Length == 0)
+                return startIndex;
+            if (value.Length > count)
+                return -1;
 
-            //int start = _startIndex + startIndex;
-            //int end = start + count;
-            //UCodepoint firstCodepoint = value.Length > 0 ? value[0] : UCodepoint.MinValue;
-            //for (int i = start; i < end; i++)
-            //{
-            //    if (_codepoints[i] == firstCodepoint)
-            //        return i - _startIndex;
-            //}
+            int start = _startIndex + startIndex;
+            int end = start + count - value.Length + 1;
+            int valueStart = value._startIndex;
+            for (int i = start; i < end; i++)
+            {
+                bool found = true;
+                for (int j = 0; j < value.Length; j++)
+                {
+                    if (_codepoints[i + j] != value._codepoints[valueStart + j])
+                    {
+                        found = false;
+                        break;
+                    }
+                }
+                if (found)
+                    return i - _startIndex;
+            }
 
-            //return -1;
-            // TODO: Write tests for this method
-            throw new NotImplementedException();
+            return -1;
         }
 
+        /// <summary>
+        /// Finds the zero-based index of the last occurrence of the specified Unicode string in this string.
+        /// </summary>
         public int LastIndexOf(UString value)
         {
             return LastIndexOf(value, 0, Length);
         }
 
+        /// <summary>
+        /// Finds the zero-based index of the last occurrence of the specified Unicode string in this string.
+        /// The search starts at a specified codepoint position and proceeds backward toward the beginning of
+        /// the string.
+        /// </summary>
         public int LastIndexOf(UString value, int startIndex)
         {
             return LastIndexOf(value, startIndex, Length - startIndex);
         }
 
+        /// <summary>
+        /// Finds the zero-based index of the last occurrence of the specified Unicode string in this string.
+        /// The search starts at a specified codepoint position and proceeds backward toward the beginning of
+        /// the string for a specified number of codepoint positions.
+        /// </summary>
         public int LastIndexOf(UString value, int startIndex, int count)
         {
-            // TODO: Write tests for this method
-            throw new NotImplementedException();
+            if (count < 0)
+                throw new ArgumentOutOfRangeException(nameof(count), "count is less than zero");
+            if (startIndex >= Length)
+                throw new ArgumentOutOfRangeException(nameof(startIndex), "startIndex must be less than the length of the string");
+            if (startIndex < 0)
+                throw new ArgumentOutOfRangeException(nameof(startIndex), "startIndex must be greater than zero");
+            if (startIndex - count + 1 < 0)
+                throw new ArgumentException("StartIndex and count must reside in the string");
+
+            if (value.Length == 0)
+                return startIndex;
+            if (value.Length > count)
+                return -1;
+
+            int firstPossibleStart = _startIndex + startIndex - value.Length + 1;
+            int lastPossibleStart = _startIndex + startIndex - count + 1;
+            int valueStart = value._startIndex;
+            for (int i = firstPossibleStart; i >= lastPossibleStart; i--)
+            {
+                bool found = true;
+                for (int j = 0; j < value.Length; j++)
+                {
+                    if (_codepoints[i + j] != value._codepoints[valueStart + j])
+                    {
+                        found = false;
+                        break;
+                    }
+                }
+                if (found)
+                    return i - _startIndex;
+            }
+
+            return -1;
         }
 
         /// <summary>
@@ -573,10 +633,34 @@ namespace UnicodeHelper
                    (UCodepoint.ToLower(start) == value || UCodepoint.ToUpper(start) == value);
         }
 
+        /// <summary>
+        /// Determines whether the beginning of this Unicode string matches the specified value.
+        /// </summary>
         public bool StartsWith(UString value, bool ignoreCase = false)
         {
-            // TODO: Write tests for this method
-            throw new NotImplementedException();
+            if (value.Length == 0)
+                return true;
+            if (value.Length > Length)
+                return false;
+
+            int thisStart = _startIndex;
+            int valueStart = value._startIndex;
+            for (int i = 0; i < value.Length; i++)
+            {
+                UCodepoint thisChar = _codepoints[thisStart + i];
+                UCodepoint valueChar = value._codepoints[valueStart + i];
+                if (thisChar != valueChar)
+                {
+                    if (!ignoreCase ||
+                        (thisChar != UCodepoint.ToLower(valueChar) &&
+                         thisChar != UCodepoint.ToUpper(valueChar)))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -595,22 +679,89 @@ namespace UnicodeHelper
                    (UCodepoint.ToLower(end) == value || UCodepoint.ToUpper(end) == value);
         }
 
+        /// <summary>
+        /// Determines whether the end of this Unicode string matches the specified value.
+        /// </summary>
         public bool EndsWith(UString value, bool ignoreCase = false)
         {
-            // TODO: Write tests for this method
-            throw new NotImplementedException();
+            if (value.Length == 0)
+                return true;
+            if (value.Length > Length)
+                return false;
+
+            int thisStart = _startIndex + Length - value.Length;
+            int valueStart = value._startIndex;
+            for (int i = 0; i < value.Length; i++)
+            {
+                UCodepoint thisChar = _codepoints[thisStart + i];
+                UCodepoint valueChar = value._codepoints[valueStart + i];
+                if (thisChar != valueChar)
+                {
+                    if (!ignoreCase ||
+                        (thisChar != UCodepoint.ToLower(valueChar) &&
+                         thisChar != UCodepoint.ToUpper(valueChar)))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
         }
 
+        /// <summary>
+        /// Determines whether this Unicode string contains the specified Unicode codepoint.
+        /// </summary>
         public bool Contains(UCodepoint value, bool ignoreCase = false)
         {
-            // TODO: Write tests for this method
-            throw new NotImplementedException();
+            int end = _startIndex + Length;
+            for (int i = _startIndex; i < end; i++)
+            {
+                UCodepoint cp = _codepoints[i];
+                if (cp == value)
+                    return true;
+                if (ignoreCase && (UCodepoint.ToLower(cp) == value || UCodepoint.ToUpper(cp) == value))
+                    return true;
+            }
+
+            return false;
         }
 
+        /// <summary>
+        /// Determines whether this Unicode string contains the specified Unicode string.
+        /// </summary>
         public bool Contains(UString value, bool ignoreCase = false)
         {
-            // TODO: Write tests for this method
-            throw new NotImplementedException();
+            if (value.Length == 0)
+                return true;
+            if (value.Length > Length)
+                return false;
+
+            int end = _startIndex + Length - value.Length + 1;
+            int valueStart = value._startIndex;
+            for (int i = _startIndex; i < end; i++)
+            {
+                bool found = true;
+                for (int j = 0; j < value.Length; j++)
+                {
+                    UCodepoint thisChar = _codepoints[i + j];
+                    UCodepoint valueChar = value._codepoints[valueStart + j];
+                    if (thisChar != valueChar)
+                    {
+                        if (!ignoreCase ||
+                            (thisChar != UCodepoint.ToLower(valueChar) &&
+                             thisChar != UCodepoint.ToUpper(valueChar)))
+                        {
+                            found = false;
+                            break;
+                        }
+                    }
+                }
+                if (found)
+                    return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -807,7 +958,7 @@ namespace UnicodeHelper
         [SuppressMessage("ReSharper", "NonReadonlyMemberInGetHashCode")]
         public override int GetHashCode()
         {
-            // TODO: Write tests for this method
+            // REVIEW: Should this be thread-safe?
             if (_cachedHash == null)
             {
                 HashCode hc = new HashCode();
