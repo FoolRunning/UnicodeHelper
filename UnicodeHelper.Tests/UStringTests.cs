@@ -766,13 +766,13 @@ namespace UnicodeHelper
         {
             UString? us = testString != null ? new UString(testString) : null;
             UString expectedUs = new(expectedResults);
-            Assert.AreEqual(UString.Concat(us, toConcat), expectedUs);
-            Assert.AreEqual(us + toConcat, expectedUs);
+            Assert.AreEqual(expectedUs, UString.Concat(us, toConcat));
+            Assert.AreEqual(expectedUs, us + toConcat);
 
             // Test making sure that a substring results in the correct result
             us = CreateTestSubstring(testString);
-            Assert.AreEqual(UString.Concat(us, toConcat), expectedUs);
-            Assert.AreEqual(us + toConcat, expectedUs);
+            Assert.AreEqual(expectedUs, UString.Concat(us, toConcat));
+            Assert.AreEqual(expectedUs, us + toConcat);
         }
 
         private static IEnumerable<object?[]> ConcatCodepointPlusStringTestData =>
@@ -790,13 +790,13 @@ namespace UnicodeHelper
         {
             UString? us = testString != null ? new UString(testString) : null;
             UString expectedUs = new(expectedResults);
-            Assert.AreEqual(UString.Concat(toConcat, us), expectedUs);
-            Assert.AreEqual(toConcat + us, expectedUs);
+            Assert.AreEqual(expectedUs, UString.Concat(toConcat, us));
+            Assert.AreEqual(expectedUs, toConcat + us);
 
             // Test making sure that a substring results in the correct result
             us = CreateTestSubstring(testString);
-            Assert.AreEqual(UString.Concat(toConcat, us), expectedUs);
-            Assert.AreEqual(toConcat + us, expectedUs);
+            Assert.AreEqual(expectedUs, UString.Concat(toConcat, us));
+            Assert.AreEqual(expectedUs, toConcat + us);
         }
 
         private static IEnumerable<object?[]> ConcatStringPlusStringTestData =>
@@ -818,14 +818,14 @@ namespace UnicodeHelper
             UString? us1 = str1 != null ? new UString(str1) : null;
             UString? us2 = str2 != null ? new UString(str2) : null;
             UString expectedUs = new(expectedResults);
-            Assert.AreEqual(UString.Concat(us1, us2), expectedUs);
-            Assert.AreEqual(us1 + us2, expectedUs);
+            Assert.AreEqual(expectedUs, UString.Concat(us1, us2));
+            Assert.AreEqual(expectedUs, us1 + us2);
 
             // Test making sure that a substring results in the correct result
             us1 = CreateTestSubstring(str1);
             us2 = CreateTestSubstring(str2);
-            Assert.AreEqual(UString.Concat(us1, us2), expectedUs);
-            Assert.AreEqual(us1 + us2, expectedUs);
+            Assert.AreEqual(expectedUs, UString.Concat(us1, us2));
+            Assert.AreEqual(expectedUs, us1 + us2);
         }
 
         private static IEnumerable<object?[]> ConcatStringPlusStringStringTestData =>
@@ -849,15 +849,15 @@ namespace UnicodeHelper
             UString? us2 = str2 != null ? new UString(str2) : null;
             UString? us3 = str3 != null ? new UString(str3) : null;
             UString expectedUs = new(expectedResults);
-            Assert.AreEqual(UString.Concat(us1, us2, us3), expectedUs);
-            Assert.AreEqual(us1 + us2 + us3, expectedUs);
+            Assert.AreEqual(expectedUs, UString.Concat(us1, us2, us3));
+            Assert.AreEqual(expectedUs, us1 + us2 + us3);
 
             // Test making sure that a substring results in the correct result
             us1 = CreateTestSubstring(str1);
             us2 = CreateTestSubstring(str2);
             us3 = CreateTestSubstring(str3);
-            Assert.AreEqual(UString.Concat(us1, us2, us3), expectedUs);
-            Assert.AreEqual(us1 + us2 + us3, expectedUs);
+            Assert.AreEqual(expectedUs, UString.Concat(us1, us2, us3));
+            Assert.AreEqual(expectedUs, us1 + us2 + us3);
         }
 
         private static IEnumerable<object?[]> ConcatStringPlusStringStringStringTestData =>
@@ -883,16 +883,16 @@ namespace UnicodeHelper
             UString? us3 = str3 != null ? new UString(str3) : null;
             UString? us4 = str4 != null ? new UString(str4) : null;
             UString expectedUs = new(expectedResults);
-            Assert.AreEqual(UString.Concat(us1, us2, us3, us4), expectedUs);
-            Assert.AreEqual(us1 + us2 + us3 + us4, expectedUs);
+            Assert.AreEqual(expectedUs, UString.Concat(us1, us2, us3, us4));
+            Assert.AreEqual(expectedUs, us1 + us2 + us3 + us4);
 
             // Test making sure that a substring results in the correct result
             us1 = CreateTestSubstring(str1);
             us2 = CreateTestSubstring(str2);
             us3 = CreateTestSubstring(str3);
             us4 = CreateTestSubstring(str4);
-            Assert.AreEqual(UString.Concat(us1, us2, us3, us4), expectedUs);
-            Assert.AreEqual(us1 + us2 + us3 + us4, expectedUs);
+            Assert.AreEqual(expectedUs, UString.Concat(us1, us2, us3, us4));
+            Assert.AreEqual(expectedUs, us1 + us2 + us3 + us4);
         }
 
         private static IEnumerable<object[]> ConcatStringListTestData =>
@@ -912,11 +912,11 @@ namespace UnicodeHelper
         public void Concat_StringList(string?[] strings, string expectedResults)
         {
             UString expectedUs = new(expectedResults);
-            Assert.AreEqual(UString.Concat(strings.Select(s => s != null ? new UString(s) : null).ToArray()), 
-                expectedUs);
+            Assert.AreEqual(expectedUs, 
+                UString.Concat(strings.Select(s => s != null ? new UString(s) : null).ToArray()));
 
             // Test making sure that a substring results in the correct result
-            Assert.AreEqual(UString.Concat(strings.Select(CreateTestSubstring).ToArray()), expectedUs);
+            Assert.AreEqual(expectedUs, UString.Concat(strings.Select(CreateTestSubstring).ToArray()));
         }
         #endregion
         
