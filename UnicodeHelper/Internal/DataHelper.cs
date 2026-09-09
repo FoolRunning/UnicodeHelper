@@ -11,6 +11,8 @@ namespace UnicodeHelper.Internal
 {
     internal static class DataHelper
     {
+        private static readonly string[] codePointRangeSeparatorList = { ".." };
+
         public static readonly CsvConfiguration CsvConfiguration = 
             new CsvConfiguration(CultureInfo.InvariantCulture)
         {
@@ -42,24 +44,18 @@ namespace UnicodeHelper.Internal
             }
         }
 
-        public static void ReadDataFile(string resourceFilePath, Action<TextReader> readFileAction)
+        public static void HandleCodepointRange<T>(string codePointHexValue, T target, 
+            Action<T, int> handleCodepoint)
         {
-            using (FileStream stream = new FileStream(resourceFilePath, FileMode.Open, FileAccess.Read))
-            using (TextReader textReader = new StreamReader(stream))
-                readFileAction(textReader);
-        }
-
-        public static void HandleCodepointRange(string codePointHexValue, Action<int> handleCodepoint)
-        {
-            string[] range = codePointHexValue.Split(new[] {".."}, StringSplitOptions.None);
+            string[] range = codePointHexValue.Split(codePointRangeSeparatorList, StringSplitOptions.None);
             int codePoint = int.Parse(range[0], NumberStyles.HexNumber);
             if (range.Length == 1)
-                handleCodepoint(codePoint);
+                handleCodepoint(target, codePoint);
             else
             {
                 int endCodePoint = int.Parse(range[1], NumberStyles.HexNumber);
                 for (int c = codePoint; c <= endCodePoint; c++)
-                    handleCodepoint(c);
+                    handleCodepoint(target, c);
             }
         }
 

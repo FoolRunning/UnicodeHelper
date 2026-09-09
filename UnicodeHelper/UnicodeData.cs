@@ -287,13 +287,17 @@ namespace UnicodeHelper
         {
             // Remove any excluded compositions that haven't already been ignored
             CompositionExclusions compositionExclusions = new CompositionExclusions();
-            foreach (KeyValuePair<long, UCodepoint> kvp in compositionMapping.ToArray())
+            List<long> toRemove = new List<long>();
+            foreach (KeyValuePair<long, UCodepoint> kvp in compositionMapping)
             {
                 long key = kvp.Key;
                 Tuple<UCodepoint, UCodepoint> keyParts = UncreateCombiningKey(key);
                 if (GetCombiningClass(keyParts.Item1) != 0 || compositionExclusions.IsExcluded(kvp.Value))
-                    compositionMapping.Remove(kvp.Key);
+                    toRemove.Add(kvp.Key);
             }
+
+            foreach (long key in toRemove)
+                compositionMapping.Remove(key);
         }
 
         private static void FullyExpandDecomposition()

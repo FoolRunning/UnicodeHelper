@@ -58,8 +58,8 @@ namespace UnicodeHelper
                 {
                     string propName = DataHelper.RemoveTrailingComment(line.PropertyName);
                     UnicodeProperty property = UnicodeConversion.ConvertProperty(propName);
-                    DataHelper.HandleCodepointRange(line.CodePointRange, codepoint => 
-                        props[codepoint] |= property);
+                    DataHelper.HandleCodepointRange(line.CodePointRange, property,
+                        (prop, cp) => props[cp] |= prop);
                 }
             }
             
@@ -69,10 +69,11 @@ namespace UnicodeHelper
                 {
                     string propName = DataHelper.RemoveTrailingComment(line.PropertyName);
                     UnicodeProperty property = UnicodeConversion.ConvertProperty(propName);
-                    DataHelper.HandleCodepointRange(line.CodePointRange, codepoint =>
+                    DataHelper.HandleCodepointRange(line.CodePointRange, property, 
+                        (prop, cp) =>
                     {
                         if (property != UnicodeProperty.IndicConjunctBreak)
-                            props[codepoint] |= property;
+                            props[cp] |= prop;
                         else
                         {
                             // TODO: Figure out how to handle these properties

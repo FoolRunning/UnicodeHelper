@@ -31,6 +31,10 @@ namespace UnicodeHelper
     [PublicAPI]
     public static class UCodepointExtensions
     {
+        private const string FormatPadToSix = "X6";
+        private const string FormatPadToFour = "X4";
+        private const string FormatMinimal = "X";
+
         /// <summary>
         /// Returns this character as a hexadecimal string (e.g. 'A' would be "0041")
         /// </summary>
@@ -47,9 +51,9 @@ namespace UnicodeHelper
             string formatString;
             switch (padding)
             {
-                case HexPadding.PadToSix: formatString = "X6"; break;
-                case HexPadding.Minimal: formatString = "X"; break;
-                default: formatString = uc <= 0xFFFF ? "X4" : "X"; break;
+                case HexPadding.PadToSix: formatString = FormatPadToSix; break;
+                case HexPadding.Minimal: formatString = FormatMinimal; break;
+                default: formatString = uc <= 0xFFFF ? FormatPadToFour : FormatMinimal; break;
             }
 
             return ((int)uc).ToString(formatString);

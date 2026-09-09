@@ -61,8 +61,8 @@ namespace UnicodeHelper
                 foreach (DerivedNameFileLine line in reader.GetRecords<DerivedNameFileLine>())
                 {
                     string name = line.Name.Trim();
-                    DataHelper.HandleCodepointRange(line.CodePointRange, codepoint =>
-                        AddName(codepoint, name, NameType.Base));
+                    DataHelper.HandleCodepointRange(line.CodePointRange, name, 
+                        (n, cp) => AddName(cp, n, NameType.Base));
                 }
             }
 

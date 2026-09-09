@@ -8,6 +8,7 @@ using JetBrains.Annotations;
 
 namespace UnicodeHelper.TestData
 {
+    #region NormalizationTestData record
     public sealed record NormalizationTestData(UString Source, 
         UString NfcResult, UString NfdResult, UString NfkcResult, UString NfkdResult, 
         string Description)
@@ -17,12 +18,12 @@ namespace UnicodeHelper.TestData
             return Description;
         }
     }
+    #endregion
 
     /// <remarks>Test data taken from https://www.unicode.org/Public/UCD/latest/ucd/NormalizationTest.txt</remarks>
     internal static class NormalizationTestDataSet
     {
         #region Data fields
-        private static readonly UStringBuilder dataBldr = new();
         private static readonly List<NormalizationTestData> testCases = new();
         #endregion
 
@@ -44,6 +45,7 @@ namespace UnicodeHelper.TestData
                 MissingFieldFound = null
             };
 
+            using UStringBuilder dataBldr = new();
             using TextReader textReader = new StreamReader(dataStream);
             using CsvReader reader = new CsvReader(textReader, config);
             foreach (TestDataLine line in reader.GetRecords<TestDataLine>())
@@ -51,11 +53,11 @@ namespace UnicodeHelper.TestData
                 if (line.Source.StartsWith('#') || line.Source.StartsWith('@'))
                     continue;
                 
-                testCases.Add(new NormalizationTestData(CreateUStringFromCodepoints(line.Source), 
-                    CreateUStringFromCodepoints(line.NfcResult),
-                    CreateUStringFromCodepoints(line.NfdResult), 
-                    CreateUStringFromCodepoints(line.NfkcResult),
-                    CreateUStringFromCodepoints(line.NfkdResult), 
+                testCases.Add(new NormalizationTestData(CreateUStringFromCodepoints(line.Source, dataBldr), 
+                    CreateUStringFromCodepoints(line.NfcResult, dataBldr),
+                    CreateUStringFromCodepoints(line.NfdResult, dataBldr), 
+                    CreateUStringFromCodepoints(line.NfkcResult, dataBldr),
+                    CreateUStringFromCodepoints(line.NfkdResult, dataBldr), 
                     string.Join("", line.Comments).TrimStart(' ', '#')));
             }
         }
@@ -66,7 +68,7 @@ namespace UnicodeHelper.TestData
         #endregion
 
         #region Helper methods
-        private static UString CreateUStringFromCodepoints(string? codepoints)
+        private static UString CreateUStringFromCodepoints(string? codepoints, UStringBuilder dataBldr)
         {
             if (codepoints == null)
                 return UString.Empty;
