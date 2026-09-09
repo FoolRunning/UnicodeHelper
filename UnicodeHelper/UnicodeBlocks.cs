@@ -2,24 +2,29 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using CsvHelper;
 using JetBrains.Annotations;
 using UnicodeHelper.Internal;
 
 namespace UnicodeHelper
 {
     /// <summary>
-    /// 
+    ///
     /// </summary>
     /// <remarks>This class represents the data in the Unicode specification
     /// <see href="https://www.unicode.org/reports/tr44/#Blocks.txt">Blocks.txt</see></remarks>
     [PublicAPI]
     public static class UnicodeBlocks
     {
+        #region Constants
+        private const int CodePointRangeField = 0;
+        private const int BlockNameField = 1;
+        private const int FieldCount = 2;
+        #endregion
+
         #region Data fields
         private static readonly List<BlockRange> blocks = new List<BlockRange>();
         #endregion
-        
+
         #region Static constructor
         static UnicodeBlocks()
         {
@@ -43,17 +48,14 @@ namespace UnicodeHelper
         /// </summary>
         private static void Init(TextReader textReader)
         {
-            using (CsvReader reader = new CsvReader(textReader, DataHelper.CsvConfiguration))
+            foreach (string[] line in DataHelper.ReadDataFile(textReader, FieldCount))
             {
-                foreach (BlocksFileLine line in reader.GetRecords<BlocksFileLine>())
-                {
-                    string[] range = line.CodePointRange.Split(new[] {".."}, StringSplitOptions.None);
-                    int startCodePoint = int.Parse(range[0], NumberStyles.HexNumber);
-                    int endCodePoint = int.Parse(range[1], NumberStyles.HexNumber);
-                    string blockName = line.BlockName.Trim();
+                string range = line[CodePointRangeField];
+                int separatorIndex = range.IndexOf("..", StringComparison.Ordinal);
+                int startCodePoint = int.Parse(range.Substring(0, separatorIndex), NumberStyles.HexNumber);
+                int endCodePoint = int.Parse(range.Substring(separatorIndex + 2), NumberStyles.HexNumber);
 
-                    blocks.Add(new BlockRange((UCodepoint)startCodePoint, (UCodepoint)endCodePoint, blockName));
-                }
+                blocks.Add(new BlockRange((UCodepoint)startCodePoint, (UCodepoint)endCodePoint, line[BlockNameField]));
             }
         }
         #endregion
@@ -79,7 +81,7 @@ namespace UnicodeHelper
 
             private readonly UCodepoint _start;
             private readonly UCodepoint _end;
-            
+
             public BlockRange(UCodepoint start, UCodepoint end, string blockName)
             {
                 _start = start;

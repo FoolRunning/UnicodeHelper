@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using CsvHelper;
-using CsvHelper.Configuration.Attributes;
 using JetBrains.Annotations;
 using UnicodeHelper.Internal;
 
@@ -20,7 +18,24 @@ namespace UnicodeHelper
     [PublicAPI]
     public static class UnicodeNames
     {
+        #region Constants
+        // DerivedName.txt fields
+        private const int DerivedNameCodePointRangeField = 0;
+        private const int DerivedNameNameField = 1;
+        private const int DerivedNameFieldCount = 2;
+
+        // NameAliases.txt fields
+        private const int AliasCodePointField = 0;
+        private const int AliasNameField = 1;
+        private const int AliasTypeField = 2;
+        private const int AliasFieldCount = 3;
+        #endregion
+
         #region Data fields
+        /// <summary>The names returned for a codepoint that has no name (the vast majority of codepoints)</summary>
+        private static readonly NameInfo[] noNames = { new NameInfo("", NameType.None) };
+
+        /// <summary>Names for each codepoint. <c>null</c> for codepoints with no name.</summary>
         private static readonly NameInfo[][] names = new NameInfo[UnicodeData.UnicodeCodepointCount][];
         #endregion
 
@@ -51,45 +66,38 @@ namespace UnicodeHelper
         /// </summary>
         private static void Init(TextReader aliasesTextReader, TextReader derivedNameTextReader)
         {
-            // Load Unicode defaults
-            for (int i = 0; i < names.Length; i++)
-                names[i] = new[] { new NameInfo("", NameType.None) };
-
             // Default to the names listed in the DerivedName file
-            using (CsvReader reader = new CsvReader(derivedNameTextReader, DataHelper.CsvConfiguration))
+            foreach (string[] line in DataHelper.ReadDataFile(derivedNameTextReader, DerivedNameFieldCount))
             {
-                foreach (DerivedNameFileLine line in reader.GetRecords<DerivedNameFileLine>())
-                {
-                    string name = line.Name.Trim();
-                    DataHelper.HandleCodepointRange(line.CodePointRange, name, 
-                        (n, cp) => AddName(cp, n, NameType.Base));
-                }
+                DataHelper.HandleCodepointRange(line[DerivedNameCodePointRangeField], line[DerivedNameNameField],
+                    (n, cp) => AddName(cp, n, NameType.Base));
             }
 
             // Merge data with what is in the NameAliases file
-            using (CsvReader reader = new CsvReader(aliasesTextReader, DataHelper.CsvConfiguration))
+            foreach (string[] line in DataHelper.ReadDataFile(aliasesTextReader, AliasFieldCount))
             {
-                foreach (NameAliasFileLine line in reader.GetRecords<NameAliasFileLine>())
+                int codePoint = int.Parse(line[AliasCodePointField], NumberStyles.HexNumber);
+                string name = line[AliasNameField];
+                switch (line[AliasTypeField])
                 {
-                    int codePoint = int.Parse(line.CodePoint, NumberStyles.HexNumber);
-                    string name = line.Alias;
-                    switch (line.Type)
-                    {
-                        case "control": AddName(codePoint, name, NameType.Base); break;
-                        case "alternate": AddName(codePoint, name, NameType.Alternate); break;
-                        case "abbreviation": AddName(codePoint, name, NameType.Abbreviation); break;
-                        case "figment": AddName(codePoint, name, NameType.Figment); break;
-                        
-                        case "correction":
-                            Debug.Assert(names[codePoint].Length == 1, "Unexpected correction of an alternate name");
-                            names[codePoint][0] = new NameInfo(name, NameType.Base);
-                            break;
-                    }
+                    case "control": AddName(codePoint, name, NameType.Base); break;
+                    case "alternate": AddName(codePoint, name, NameType.Alternate); break;
+                    case "abbreviation": AddName(codePoint, name, NameType.Abbreviation); break;
+                    case "figment": AddName(codePoint, name, NameType.Figment); break;
+
+                    case "correction":
+                        NameInfo[] nameList = names[codePoint];
+                        Debug.Assert(nameList != null && nameList.Length == 1, "Unexpected correction of an alternate name");
+                        if (nameList == null)
+                            AddName(codePoint, name, NameType.Base);
+                        else
+                            nameList[0] = new NameInfo(name, NameType.Base);
+                        break;
                 }
             }
         }
         #endregion
-        
+
         #region Public methods
         /// <summary>
         /// Gets a list of names defined by the Unicode standard. Name order is not guaranteed,
@@ -97,20 +105,19 @@ namespace UnicodeHelper
         /// </summary>
         public static IReadOnlyList<NameInfo> GetNames(UCodepoint uc)
         {
-            return names[(int)uc];
+            return names[(int)uc] ?? noNames;
         }
         #endregion
 
         #region Helper methods
         private static void AddName(int codepoint, string name, NameType nameType)
         {
-            NameInfo[] nameList = names[codepoint]; // Optimize for one name (vast majority of codepoints)
-            if (nameList[0].NameType != NameType.None)
-            {
-                // Codepoint has more than one name (rare). Just add one element to the array for the new name.
-                Array.Resize(ref nameList, nameList.Length + 1);
-                names[codepoint] = nameList;
-            }
+            NameInfo[] nameList = names[codepoint];
+            if (nameList == null)
+                nameList = new NameInfo[1]; // Optimize for one name (vast majority of named codepoints)
+            else
+                Array.Resize(ref nameList, nameList.Length + 1); // Codepoint has more than one name (rare)
+            names[codepoint] = nameList;
 
             if (name[name.Length - 1] == '*')
             {
@@ -122,36 +129,6 @@ namespace UnicodeHelper
                 Debug.Assert(name.IndexOf('*') == -1);
             }
             nameList[nameList.Length - 1] = new NameInfo(name, nameType);
-        }
-        #endregion
-
-        #region DerivedNameFileLine class
-        private sealed class DerivedNameFileLine
-        {
-            [Index(0)]
-            [UsedImplicitly]
-            public string CodePointRange { get; set; }
-
-            [Index(1)]
-            [UsedImplicitly]
-            public string Name { get; set; }
-        }
-        #endregion
-
-        #region NameAliasFileLine class
-        private sealed class NameAliasFileLine
-        {
-            [Index(0)]
-            [UsedImplicitly]
-            public string CodePoint { get; set; }
-
-            [Index(1)]
-            [UsedImplicitly]
-            public string Alias { get; set; }
-
-            [Index(2)]
-            [UsedImplicitly]
-            public string Type { get; set; }
         }
         #endregion
     }

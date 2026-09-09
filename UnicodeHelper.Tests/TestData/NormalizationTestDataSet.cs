@@ -1,16 +1,12 @@
-﻿using CsvHelper;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
-using CsvHelper.Configuration;
-using CsvHelper.Configuration.Attributes;
-using JetBrains.Annotations;
 
 namespace UnicodeHelper.TestData
 {
     #region NormalizationTestData record
-    public sealed record NormalizationTestData(UString Source, 
-        UString NfcResult, UString NfdResult, UString NfkcResult, UString NfkdResult, 
+    public sealed record NormalizationTestData(UString Source,
+        UString NfcResult, UString NfdResult, UString NfkcResult, UString NfkdResult,
         string Description)
     {
         public override string ToString()
@@ -23,6 +19,17 @@ namespace UnicodeHelper.TestData
     /// <remarks>Test data taken from https://www.unicode.org/Public/UCD/latest/ucd/NormalizationTest.txt</remarks>
     internal static class NormalizationTestDataSet
     {
+        #region Constants
+        // Format of each line: source; NFC; NFD; NFKC; NFKD; # comment
+        private const int SourceField = 0;
+        private const int NfcField = 1;
+        private const int NfdField = 2;
+        private const int NfkcField = 3;
+        private const int NfkdField = 4;
+        private const int CommentField = 5;
+        private const int FieldCount = 6;
+        #endregion
+
         #region Data fields
         private static readonly List<NormalizationTestData> testCases = new();
         #endregion
@@ -34,31 +41,25 @@ namespace UnicodeHelper.TestData
                 .GetManifestResourceStream("UnicodeHelper.TestData.NormalizationTest.txt");
             Debug.Assert(dataStream != null, "Unable to find embedded test data");
 
-            CsvConfiguration config = new CsvConfiguration(CultureInfo.InvariantCulture)
-            {
-                HasHeaderRecord = false,
-                Delimiter = ";",
-                AllowComments = false,
-                IgnoreBlankLines = true,
-                Mode = CsvMode.NoEscape,
-                TrimOptions = TrimOptions.None,
-                MissingFieldFound = null
-            };
-
             using UStringBuilder dataBldr = new();
             using TextReader textReader = new StreamReader(dataStream);
-            using CsvReader reader = new CsvReader(textReader, config);
-            foreach (TestDataLine line in reader.GetRecords<TestDataLine>())
+            string? line;
+            while ((line = textReader.ReadLine()) != null)
             {
-                if (line.Source.StartsWith('#') || line.Source.StartsWith('@'))
+                if (line.Length == 0 || line[0] == '#' || line[0] == '@')
                     continue;
-                
-                testCases.Add(new NormalizationTestData(CreateUStringFromCodepoints(line.Source, dataBldr), 
-                    CreateUStringFromCodepoints(line.NfcResult, dataBldr),
-                    CreateUStringFromCodepoints(line.NfdResult, dataBldr), 
-                    CreateUStringFromCodepoints(line.NfkcResult, dataBldr),
-                    CreateUStringFromCodepoints(line.NfkdResult, dataBldr), 
-                    string.Join("", line.Comments).TrimStart(' ', '#')));
+
+                // The comment (last field) can itself contain semicolons, so limit the split
+                string[] fields = line.Split(';', FieldCount);
+                if (fields.Length < FieldCount)
+                    throw new InvalidDataException("Unexpected test data line: " + line);
+
+                testCases.Add(new NormalizationTestData(CreateUStringFromCodepoints(fields[SourceField], dataBldr),
+                    CreateUStringFromCodepoints(fields[NfcField], dataBldr),
+                    CreateUStringFromCodepoints(fields[NfdField], dataBldr),
+                    CreateUStringFromCodepoints(fields[NfkcField], dataBldr),
+                    CreateUStringFromCodepoints(fields[NfkdField], dataBldr),
+                    fields[CommentField].TrimStart(' ', '#')));
             }
         }
         #endregion
@@ -68,13 +69,10 @@ namespace UnicodeHelper.TestData
         #endregion
 
         #region Helper methods
-        private static UString CreateUStringFromCodepoints(string? codepoints, UStringBuilder dataBldr)
+        private static UString CreateUStringFromCodepoints(string codepoints, UStringBuilder dataBldr)
         {
-            if (codepoints == null)
-                return UString.Empty;
-            
             dataBldr.Clear();
-            
+
             foreach (string part in codepoints.Split(' ', StringSplitOptions.RemoveEmptyEntries))
             {
                 int cp = int.Parse(part, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
@@ -82,30 +80,6 @@ namespace UnicodeHelper.TestData
             }
 
             return dataBldr.ToUString();
-        }
-        #endregion
-
-        #region TestDataLine class
-        [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
-        private sealed class TestDataLine
-        {
-            [Index(0)]
-            public required string Source { get; set; }
-
-            [Index(1)]
-            public string? NfcResult { get; set; }
-
-            [Index(2)]
-            public string? NfdResult { get; set; }
-
-            [Index(3)]
-            public string? NfkcResult { get; set; }
-
-            [Index(4)]
-            public string? NfkdResult { get; set; }
-
-            [Index(5, 20)]
-            public required string?[] Comments { get; set; }
         }
         #endregion
     }

@@ -4,8 +4,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using CsvHelper;
-using CsvHelper.Configuration.Attributes;
 using JetBrains.Annotations;
 using UnicodeHelper.Internal;
 
@@ -28,6 +26,21 @@ namespace UnicodeHelper
         
         private const int BitShift = 21; // Unicode codepoints use 21 bits
         private const int BitMask = 0x1FFFFF; // 21 bits
+
+        // UnicodeData.txt fields (see https://www.unicode.org/reports/tr44/#UnicodeData.txt)
+        private const int CodePointField = 0;
+        private const int NameField = 1;
+        private const int GeneralCategoryField = 2;
+        private const int CombiningClassField = 3;
+        private const int BidiClassField = 4;
+        private const int DecompositionTypeAndMappingField = 5;
+        private const int NumericDecimalField = 6;
+        private const int NumericDigitField = 7;
+        private const int NumericField = 8;
+        private const int UppercaseMappingField = 12;
+        private const int LowercaseMappingField = 13;
+        private const int TitleCaseMappingField = 14;
+        private const int FieldCount = 15;
         #endregion
 
         #region Data fields
@@ -100,41 +113,38 @@ namespace UnicodeHelper
             SetupBidiRange(0x1EE00, 0x1EEFF, UnicodeBidiClass.ArabicLetter);
             SetupBidiRange(0x1EF00, 0x1EFFF, UnicodeBidiClass.RightToLeft);
 
-            using (CsvReader reader = new CsvReader(textReader, DataHelper.CsvConfiguration))
+            UnicodeCategory rangeCategory = UnicodeCategory.OtherNotAssigned;
+            UnicodeBidiClass rangeBidiClass = UnicodeBidiClass.OtherNeutral;
+            int rangeStartCodePoint = -1;
+            foreach (string[] line in DataHelper.ReadDataFile(textReader, FieldCount))
             {
-                UnicodeCategory rangeCategory = UnicodeCategory.OtherNotAssigned;
-                UnicodeBidiClass rangeBidiClass = UnicodeBidiClass.OtherNeutral;
-                int rangeStartCodePoint = -1;
-                foreach (UnicodeDataFileLine line in reader.GetRecords<UnicodeDataFileLine>())
+                int codePoint = int.Parse(line[CodePointField], NumberStyles.HexNumber);
+                string name = line[NameField];
+                if (rangeStartCodePoint != -1)
                 {
-                    int codePoint = int.Parse(line.CodePoint, NumberStyles.HexNumber);
-                    if (rangeStartCodePoint != -1)
-                    {
-                        if (!line.Name.EndsWith(EndOfRangeNameSuffix))
-                            throw new InvalidOperationException("Start of range not followed by end of range");
-                        
-                        for (int c = rangeStartCodePoint; c <= codePoint; c++)
-                            UpdateDatabaseForRange(c, rangeCategory, rangeBidiClass);
-                        
-                        rangeStartCodePoint = -1;
-                        rangeCategory = UnicodeCategory.OtherNotAssigned;
-                        rangeBidiClass = UnicodeBidiClass.OtherNeutral;
-                    }
-                    else if (!line.Name.EndsWith(StartOfRangeNameSuffix))
-                        UpdateDatabase(codePoint, line);
-                    else
-                    {
-                        line.Name = line.Name.Substring(1, line.Name.Length - StartOfRangeNameSuffix.Length - 1);
-                        rangeStartCodePoint = codePoint;
-                        rangeCategory = UnicodeConversion.ConvertCategory(line.GeneralCategory);
-                        rangeBidiClass = UnicodeConversion.ConvertBidiClass(line.BidiClass);
-                        Debug.Assert(string.IsNullOrEmpty(line.Numeric));
-                        Debug.Assert(string.IsNullOrEmpty(line.LowercaseMapping));
-                        Debug.Assert(string.IsNullOrEmpty(line.UppercaseMapping));
-                        Debug.Assert(string.IsNullOrEmpty(line.TitleCaseMapping));
-                        Debug.Assert(line.CombiningClass == "0");
-                        Debug.Assert(string.IsNullOrEmpty(line.DecompositionTypeAndMapping));
-                    }
+                    if (!name.EndsWith(EndOfRangeNameSuffix, StringComparison.Ordinal))
+                        throw new InvalidOperationException("Start of range not followed by end of range");
+
+                    for (int c = rangeStartCodePoint; c <= codePoint; c++)
+                        UpdateDatabaseForRange(c, rangeCategory, rangeBidiClass);
+
+                    rangeStartCodePoint = -1;
+                    rangeCategory = UnicodeCategory.OtherNotAssigned;
+                    rangeBidiClass = UnicodeBidiClass.OtherNeutral;
+                }
+                else if (!name.EndsWith(StartOfRangeNameSuffix, StringComparison.Ordinal))
+                    UpdateDatabase(codePoint, line);
+                else
+                {
+                    rangeStartCodePoint = codePoint;
+                    rangeCategory = UnicodeConversion.ConvertCategory(line[GeneralCategoryField]);
+                    rangeBidiClass = UnicodeConversion.ConvertBidiClass(line[BidiClassField]);
+                    Debug.Assert(string.IsNullOrEmpty(line[NumericField]));
+                    Debug.Assert(string.IsNullOrEmpty(line[LowercaseMappingField]));
+                    Debug.Assert(string.IsNullOrEmpty(line[UppercaseMappingField]));
+                    Debug.Assert(string.IsNullOrEmpty(line[TitleCaseMappingField]));
+                    Debug.Assert(line[CombiningClassField] == "0");
+                    Debug.Assert(string.IsNullOrEmpty(line[DecompositionTypeAndMappingField]));
                 }
             }
 
@@ -208,43 +218,47 @@ namespace UnicodeHelper
             bidiClasses[codePoint] = bidiClass;
         }
 
-        private static void UpdateDatabase(int codePoint, UnicodeDataFileLine line)
+        private static void UpdateDatabase(int codePoint, string[] line)
         {
             // Category
-            categories[codePoint] = (byte)UnicodeConversion.ConvertCategory(line.GeneralCategory);
+            categories[codePoint] = (byte)UnicodeConversion.ConvertCategory(line[GeneralCategoryField]);
 
             // Combining class
-            combiningClasses[codePoint] = byte.Parse(line.CombiningClass, CultureInfo.InvariantCulture);
+            combiningClasses[codePoint] = byte.Parse(line[CombiningClassField], CultureInfo.InvariantCulture);
 
             // Bidi class
-            bidiClasses[codePoint] = UnicodeConversion.ConvertBidiClass(line.BidiClass);
+            bidiClasses[codePoint] = UnicodeConversion.ConvertBidiClass(line[BidiClassField]);
 
             UCodepoint uc = (UCodepoint)codePoint;
-            
-            HandleDecomposition(uc, line.DecompositionTypeAndMapping);
+
+            HandleDecomposition(uc, line[DecompositionTypeAndMappingField]);
 
             // Numeric value
-            if (!string.IsNullOrEmpty(line.Numeric))
-                numericValues.Add(uc, UnicodeConversion.ConvertNumeric(line.Numeric));
+            string numeric = line[NumericField];
+            if (!string.IsNullOrEmpty(numeric))
+                numericValues.Add(uc, UnicodeConversion.ConvertNumeric(numeric));
             else
             {
-                Debug.Assert(string.IsNullOrEmpty(line.NumericDigit));
-                Debug.Assert(string.IsNullOrEmpty(line.NumericDecimal));
+                Debug.Assert(string.IsNullOrEmpty(line[NumericDigitField]));
+                Debug.Assert(string.IsNullOrEmpty(line[NumericDecimalField]));
             }
 
             // Uppercase mapping
-            if (!string.IsNullOrEmpty(line.UppercaseMapping))
-                upperCaseMappings.Add(uc, UCodepoint.FromHexStr(line.UppercaseMapping));
+            string upperMapping = line[UppercaseMappingField];
+            if (!string.IsNullOrEmpty(upperMapping))
+                upperCaseMappings.Add(uc, UCodepoint.FromHexStr(upperMapping));
 
             // Lowercase mapping
-            if (!string.IsNullOrEmpty(line.LowercaseMapping))
-                lowerCaseMappings.Add(uc, UCodepoint.FromHexStr(line.LowercaseMapping));
+            string lowerMapping = line[LowercaseMappingField];
+            if (!string.IsNullOrEmpty(lowerMapping))
+                lowerCaseMappings.Add(uc, UCodepoint.FromHexStr(lowerMapping));
 
             // Titlecase mapping
-            if (!string.IsNullOrEmpty(line.TitleCaseMapping))
-                titleCaseMappings.Add(uc, UCodepoint.FromHexStr(line.TitleCaseMapping));
-            else if (!string.IsNullOrEmpty(line.UppercaseMapping))
-                titleCaseMappings.Add(uc, UCodepoint.FromHexStr(line.UppercaseMapping));
+            string titleMapping = line[TitleCaseMappingField];
+            if (!string.IsNullOrEmpty(titleMapping))
+                titleCaseMappings.Add(uc, UCodepoint.FromHexStr(titleMapping));
+            else if (!string.IsNullOrEmpty(upperMapping))
+                titleCaseMappings.Add(uc, UCodepoint.FromHexStr(upperMapping));
         }
 
         private static void HandleDecomposition(UCodepoint uc, string decompositionStr)
@@ -253,7 +267,7 @@ namespace UnicodeHelper
                 return;
 
             bool compatMapping = false;
-            if (decompositionStr.StartsWith("<"))
+            if (decompositionStr[0] == '<')
             {
                 // Ignore decomposition type, so remove it from the string
                 int spaceIndex = decompositionStr.IndexOf(' ');
@@ -354,57 +368,6 @@ namespace UnicodeHelper
         private static Tuple<UCodepoint, UCodepoint> UncreateCombiningKey(long key)
         {
             return new Tuple<UCodepoint, UCodepoint>((UCodepoint)(int)((key >> BitShift) & BitMask), (UCodepoint)(int)(key & BitMask));
-        }
-        #endregion
-
-        #region UnicodeDataFileLine class
-        [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
-        private sealed class UnicodeDataFileLine
-        {
-            [Index(0)]
-            public string CodePoint { get; set; }
-
-            [Index(1)]
-            public string Name { get; set; }
-        
-            [Index(2)]
-            public string GeneralCategory { get; set; }
-        
-            [Index(3)]
-            public string CombiningClass { get; set; }
-        
-            [Index(4)]
-            public string BidiClass { get; set; }
-        
-            [Index(5)]
-            public string DecompositionTypeAndMapping { get; set; }
-        
-            [Index(6)]
-            public string NumericDecimal { get; set; }
-        
-            [Index(7)]
-            public string NumericDigit { get; set; }
-        
-            [Index(8)]
-            public string Numeric { get; set; }
-        
-            [Index(9)]
-            public string IsBidiMirrored { get; set; }
-        
-            [Index(10)]
-            public string ObsoleteName { get; set; }
-        
-            [Index(11)]
-            public string ObsoleteComment { get; set; }
-        
-            [Index(12)]
-            public string UppercaseMapping { get; set; }
-        
-            [Index(13)]
-            public string LowercaseMapping { get; set; }
-        
-            [Index(14)]
-            public string TitleCaseMapping { get; set; }
         }
         #endregion
     }

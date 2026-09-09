@@ -42,7 +42,7 @@ All static data classes (`UnicodeData`, `UnicodeProperties`, `UnicodeNames`, `Un
 ## Key Implementation Details
 
 ### Unicode Data File Format
-Uses CsvHelper with semicolon delimiter (`Delimiter = ";"`) to parse Unicode Consortium data files. Comment character is `#`. Configuration in `DataHelper.CsvConfiguration`.
+Unicode Consortium data files are parsed by `DataHelper.ReadDataFile`: semicolon-separated fields (trimmed), `#` starts a comment, blank lines are skipped. The embedded `Resources.zip` is read with `System.IO.Compression.ZipArchive`; the library has no third-party parsing or compression dependencies.
 
 ### Normalization Implementation
 `NormalizationEngine` is ported from the W3C reference implementation. Handles Hangul syllable decomposition/composition separately using algorithmic approach (constants `SBase`, `LBase`, `VBase`, `TBase`). Decomposition mappings are pre-expanded fully during initialization.
@@ -70,6 +70,8 @@ These `UString` methods throw `NotImplementedException`:
 
 2. **CharLength vs Length**: `UString.Length` counts codepoints; `CharLength` counts UTF-16 chars (different for upper-plane characters).
 
-3. **Initialization time**: First access to `UnicodeData` takes ~300ms, `UnicodeProperties` ~150ms. Consider calling `Init()` during app startup.
+3. **Initialization time**: First access to `UnicodeData` takes ~150ms, `UnicodeNames` ~110ms, `UnicodeProperties` ~20ms. Consider calling `Init()` during app startup.
 
 4. **Explicit cast required**: Converting `UCodepoint` to `int` or `char` requires explicit cast: `(int)uc`, `(char)uc`.
+
+5. **Static constructor call overhead**: While a class's static constructor is running, every call into a method of that same class goes through a class-initialization check (~80ns per call). Data-loading code invoked from a static constructor must therefore keep per-codepoint work in plain loops and never use a per-codepoint callback or helper method of the class; see `UnicodeProperties.Load`.
