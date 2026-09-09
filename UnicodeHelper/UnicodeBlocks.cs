@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using JetBrains.Annotations;
 using UnicodeHelper.Internal;
@@ -37,7 +36,7 @@ namespace UnicodeHelper
         /// Initializes UnicodeBlocks using the built-in data.
         /// </summary>
         /// <remarks>Note that this initializer is not strictly needed. Any call to a method on the
-        /// class will initialize it. Since initialization can take a relatively long time (~50ms),
+        /// class will initialize it. Since initialization can take a relatively long time (~15ms),
         /// this method is provided for convenience in case an application needs to initialize at
         /// a particular moment (e.g. while a progress bar is showing).</remarks>
         public static void Init() { } // Just invokes the static constructor
@@ -50,10 +49,7 @@ namespace UnicodeHelper
         {
             foreach (string[] line in DataHelper.ReadDataFile(textReader, FieldCount))
             {
-                string range = line[CodePointRangeField];
-                int separatorIndex = range.IndexOf("..", StringComparison.Ordinal);
-                int startCodePoint = int.Parse(range.Substring(0, separatorIndex), NumberStyles.HexNumber);
-                int endCodePoint = int.Parse(range.Substring(separatorIndex + 2), NumberStyles.HexNumber);
+                DataHelper.ParseCodepointRange(line[CodePointRangeField], out int startCodePoint, out int endCodePoint);
 
                 blocks.Add(new BlockRange((UCodepoint)startCodePoint, (UCodepoint)endCodePoint, line[BlockNameField]));
             }

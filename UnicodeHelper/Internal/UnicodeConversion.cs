@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 
 namespace UnicodeHelper.Internal
 {
@@ -154,18 +155,21 @@ namespace UnicodeHelper.Internal
             };
         #endregion
 
+        [MethodImpl(HelperUtils.AggressiveOptimization)]
         public static UnicodeCategory ConvertCategory(string categoryStr)
         {
             return strToCategoryMap.TryGetValue(categoryStr, out UnicodeCategory cat) ? cat : 
                 throw new ArgumentException("Unknown category " + categoryStr);
         }
 
+        [MethodImpl(HelperUtils.AggressiveOptimization)]
         public static UnicodeBidiClass ConvertBidiClass(string bidiClassStr)
         {
             return strToBidiClassMap.TryGetValue(bidiClassStr, out UnicodeBidiClass bidiClass) ? bidiClass : 
                 throw new ArgumentException("Unknown bi-di class " + bidiClassStr);
         }
 
+        [MethodImpl(HelperUtils.AggressiveOptimization)]
         public static UnicodeProperty ConvertProperty(string propertyStr)
         {
             return strToPropertyMap.TryGetValue(propertyStr, out UnicodeProperty prop) ? prop : 

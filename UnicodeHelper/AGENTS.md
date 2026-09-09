@@ -34,7 +34,7 @@ All static data classes (`UnicodeData`, `UnicodeProperties`, `UnicodeNames`, `Un
 
 ### Internal Namespace Separation
 `UnicodeHelper.Internal` contains implementation helpers not part of the public API:
-- `DataHelper` - Resource loading and CSV parsing configuration
+- `DataHelper` - Resource loading and Unicode data-file parsing
 - `NormalizationEngine` - Unicode normalization (ported from W3C reference)
 - `HelperUtils` - Canonical sorting, text direction algorithm
 - `UnicodeConversion` - String-to-enum conversions for Unicode data files
@@ -70,8 +70,10 @@ These `UString` methods throw `NotImplementedException`:
 
 2. **CharLength vs Length**: `UString.Length` counts codepoints; `CharLength` counts UTF-16 chars (different for upper-plane characters).
 
-3. **Initialization time**: First access to `UnicodeData` takes ~150ms, `UnicodeNames` ~110ms, `UnicodeProperties` ~20ms. Consider calling `Init()` during app startup.
+3. **Initialization time**: First access to `UnicodeData` takes ~80ms, `UnicodeNames` ~60ms, `UnicodeProperties` ~30ms, `UnicodeBlocks` ~15ms (less when another class has already been initialized). Consider calling `Init()` during app startup.
 
 4. **Explicit cast required**: Converting `UCodepoint` to `int` or `char` requires explicit cast: `(int)uc`, `(char)uc`.
 
-5. **Static constructor call overhead**: While a class's static constructor is running, every call into a method of that same class goes through a class-initialization check (~80ns per call). Data-loading code invoked from a static constructor must therefore keep per-codepoint work in plain loops and never use a per-codepoint callback or helper method of the class; see `UnicodeProperties.Load`.
+5. **Static constructor call overhead**: While a class's static constructor is running, every call into a method of that same class goes through a class-initialization check (~80ns per call). Data-loading code invoked from a static constructor must therefore never make a per-codepoint call into the class being initialized. `UnicodeData` and `UnicodeNames` do their loading in a private nested `Loader` instance class whose results the static constructor copies into the static fields; `UnicodeProperties.Load` keeps the per-codepoint work in a plain loop.
+
+6. **Startup code runs unoptimized**: Tiered JIT compilation only promotes hot methods after a quiet period with no new methods being compiled, which never happens during initialization. The loaders' hot methods are therefore marked `[MethodImpl(HelperUtils.AggressiveOptimization)]` so they are fully optimized on first call (about 25% faster initialization), and `DataHelper.ReadDataFile` is a hand-written enumerator rather than a `yield` iterator so its `MoveNext` can carry the attribute too.

@@ -29,7 +29,7 @@ namespace UnicodeHelper.Internal
         private void Load(TextReader textReader)
         {
             foreach (string[] line in DataHelper.ReadDataFile(textReader, FieldCount))
-                _exclusions.Add(UCodepoint.FromHexStr(line[CodepointField]));
+                _exclusions.Add((UCodepoint)DataHelper.ParseHex(line[CodepointField]));
         }
         #endregion
 

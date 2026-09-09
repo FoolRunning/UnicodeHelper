@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using UnicodeHelper.Internal;
 
@@ -44,7 +45,7 @@ namespace UnicodeHelper
         /// Initializes UnicodeProperties using the built-in data.
         /// </summary>
         /// <remarks>Note that this initializer is not strictly needed. Any call to a method on the
-        /// class will initialize it. Since initialization can take a relatively long time (~50ms),
+        /// class will initialize it. Since initialization can take a relatively long time (~30ms),
         /// this method is provided for convenience in case an application needs to initialize at
         /// a particular moment (e.g. while a progress bar is showing).</remarks>
         public static void Init() { } // Just invokes the static constructor
@@ -57,6 +58,7 @@ namespace UnicodeHelper
         /// While a class's static constructor is running, every call into a method of that class goes through
         /// a class-initialization check (~80ns), which made a callback-per-codepoint design several times
         /// slower than the actual work.</remarks>
+        [MethodImpl(HelperUtils.AggressiveOptimization)]
         private static UnicodeProperty[] Load(TextReader propsListTextReader, TextReader derivedPropsTextReader)
         {
             // Unicode default (UnicodeProperty.Undefined == 0) is already the array default
@@ -96,6 +98,7 @@ namespace UnicodeHelper
         #endregion
 
         #region Helper methods
+        [MethodImpl(HelperUtils.AggressiveOptimization)]
         private static void AddProperty(UnicodeProperty[] props, string codePointRange, UnicodeProperty property)
         {
             DataHelper.ParseCodepointRange(codePointRange, out int startCodePoint, out int endCodePoint);
