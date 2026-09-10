@@ -99,11 +99,11 @@ namespace UnicodeHelper
 
         #region Helper methods
         [MethodImpl(HelperUtils.AggressiveOptimization)]
-        private static void AddProperty(UnicodeProperty[] props, string codePointRange, UnicodeProperty property)
+        private static void AddProperty(UnicodeProperty[] properties, string codePointRange, UnicodeProperty property)
         {
             DataHelper.ParseCodepointRange(codePointRange, out int startCodePoint, out int endCodePoint);
             for (int c = startCodePoint; c <= endCodePoint; c++)
-                props[c] |= property;
+                properties[c] |= property;
         }
         #endregion
     }

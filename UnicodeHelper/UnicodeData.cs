@@ -155,9 +155,9 @@ namespace UnicodeHelper
                 return (HelperUtils.BoolToInt(compatMapping) << BitShift) | (int)uc;
             }
 
-            public static void UncreateDecompKey(int decompKey, out UCodepoint uc, out bool compatMapping)
+            public static void UncreateDecompKey(int decompKey, /*out UCodepoint uc,*/ out bool compatMapping)
             {
-                uc = (UCodepoint)(decompKey & BitMask);
+                //uc = (UCodepoint)(decompKey & BitMask);
                 compatMapping = (decompKey & (1 << BitShift)) != 0;
             }
 
@@ -166,10 +166,10 @@ namespace UnicodeHelper
                 return ((long)HelperUtils.BoolToInt(compatMapping) << (BitShift * 2)) | ((long)cpBase << BitShift) | (long)cpCombining;
             }
 
-            public static void UncreateCombiningKey(long key, out UCodepoint cpBase, out UCodepoint cpCombining)
+            public static void UncreateCombiningKey(long key, out UCodepoint cpBase/*, out UCodepoint cpCombining*/)
             {
                 cpBase = (UCodepoint)(int)((key >> BitShift) & BitMask);
-                cpCombining = (UCodepoint)(int)(key & BitMask);
+                //cpCombining = (UCodepoint)(int)(key & BitMask);
             }
         }
         #endregion
@@ -380,7 +380,7 @@ namespace UnicodeHelper
                 List<long> toRemove = new List<long>();
                 foreach (KeyValuePair<long, UCodepoint> kvp in CompositionMapping)
                 {
-                    Keys.UncreateCombiningKey(kvp.Key, out UCodepoint cpBase, out _);
+                    Keys.UncreateCombiningKey(kvp.Key, out UCodepoint cpBase/*, out _*/);
                     if (CombiningClasses[(int)cpBase] != 0 || compositionExclusions.IsExcluded(kvp.Value))
                         toRemove.Add(kvp.Key);
                 }
@@ -399,7 +399,7 @@ namespace UnicodeHelper
                     changedSomething = false;
                     foreach (KeyValuePair<int, UCodepoint[]> kvp in DecompositionMapping.ToArray())
                     {
-                        Keys.UncreateDecompKey(kvp.Key, out _, out bool compatMapping);
+                        Keys.UncreateDecompKey(kvp.Key, /*out _,*/ out bool compatMapping);
 
                         newMapping.Clear();
                         for (int i = 0; i < kvp.Value.Length; i++)

@@ -28,12 +28,14 @@ namespace UnicodeHelper.Internal
                 .GetManifestResourceStream("UnicodeHelper.Resources.Resources.zip");
             Debug.Assert(zipStream != null, "Unable to find embedded resource zip");
 
-            using (zipStream)
+            using (zipStream) 
+            // ReSharper disable once AssignNullToNotNullAttribute
             using (ZipArchive zip = new ZipArchive(zipStream, ZipArchiveMode.Read))
             {
                 ZipArchiveEntry entry = zip.GetEntry(resourceFileName);
                 Debug.Assert(entry != null, "Unable to find resource file in zip");
 
+                // ReSharper disable once PossibleNullReferenceException
                 using (Stream entryStream = entry.Open())
                 using (TextReader textReader = new StreamReader(entryStream, Encoding.UTF8, true, ReadBufferSize))
                     readFileAction(textReader);
