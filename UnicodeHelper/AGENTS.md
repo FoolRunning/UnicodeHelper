@@ -13,7 +13,9 @@ Unicode property data uses large arrays indexed directly by codepoint value (0-0
 - `UnicodeData.categories[]` - byte array for UnicodeCategory
 - `UnicodeData.bidiClasses[]` - enum array for bidirectional class
 - `UnicodeProperties.props[]` - UnicodeProperty flags array
-- Dictionary lookups only for sparse data (numeric values, case mappings, decomposition mappings)
+- `UnicodeData.normalizationFlags[]` - per-codepoint `NormalizationFlags` used by the normalization quick check
+- Case mappings use `CodepointMapTable`, a two-level table (256-codepoint pages, unallocated page = identity) that is far cheaper to probe than a dictionary
+- Dictionary lookups only for the remaining sparse data (numeric values, composition/decomposition mappings)
 
 ### Lazy Initialization Pattern
 All static data classes (`UnicodeData`, `UnicodeProperties`, `UnicodeNames`, `UnicodeBlocks`) use static constructors that load from embedded resources on first access. Each provides an empty `Init()` method to allow explicit initialization timing (e.g., during splash screen).
@@ -46,6 +48,8 @@ Unicode Consortium data files are parsed by `DataHelper.ReadDataFile`: semicolon
 
 ### Normalization Implementation
 `NormalizationEngine` is ported from the W3C reference implementation. Handles Hangul syllable decomposition/composition separately using algorithmic approach (constants `SBase`, `LBase`, `VBase`, `TBase`). Decomposition mappings are pre-expanded fully during initialization.
+
+`Normalize` first runs a quick check over the `NormalizationFlags` table and returns the input instance unchanged when no codepoint could be affected by (or affect its neighbours under) the requested form, so already-normalized text costs one table read per codepoint and no allocation. The flags are derived from the finished tables in `UnicodeData.Loader.ComputeNormalizationFlags`; note the propagation of `ComposesAsSecond` to codepoints whose decomposition *begins* with a composing codepoint (e.g. U+16D68), without which `16D63 16D68` would wrongly be treated as already NFC. The quick check is conservative (it can only prove that a string *is* normalized). `UString.IsNormalized` (implemented by `NormalizationEngine.IsNormalized`) follows the detection algorithm of UAX #15: codepoints that pass the quick check are skipped, and only the segments containing a "maybe" codepoint are examined: a canonical-ordering scan for NFD/NFKD, and for NFC/NFKC the segment (typically one starter and its marks) is normalized into a pooled buffer and compared. It never normalizes the whole string and allocates no strings.
 
 ### Bidi Default Values
 `UnicodeData.Init()` sets default bidirectional classes by range before loading actual data. Ranges follow DerivedBidiClass.txt specification (e.g., 0x0590-0x05FF defaults to RightToLeft).

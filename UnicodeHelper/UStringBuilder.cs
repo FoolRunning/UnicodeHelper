@@ -219,10 +219,23 @@ namespace UnicodeHelper
             if (string.IsNullOrEmpty(dotNetStr))
                 return;
             
+            // .Net strings will always be the same length or longer than the equivalent Unicode string
+            // so ensuring the length of the .Net string should always be safe.
             EnsureCapacity(dotNetStr.Length);
-            
-            foreach (UCodepoint uc in dotNetStr.Codepoints())
-                _codepoints[_length++] = uc;
+
+            UCodepoint[] codepoints = _codepoints;
+            int length = _length;
+            for (int i = 0; i < dotNetStr.Length; i++)
+            {
+                char c = dotNetStr[i];
+                if (!char.IsSurrogate(c))
+                    codepoints[length++] = c;
+                else if (char.IsHighSurrogate(c) && i + 1 < dotNetStr.Length && char.IsLowSurrogate(dotNetStr[i + 1]))
+                    codepoints[length++] = UCodepoint.FromValidSurrogatePair(c, dotNetStr[++i]);
+                else
+                    throw new ArgumentException($"Invalid surrogate at index {i}", nameof(dotNetStr));
+            }
+            _length = length;
         }
 
         /// <summary>
@@ -252,8 +265,9 @@ namespace UnicodeHelper
         #region Helper methods
         private void EnsureCapacity(int additionalCapacity)
         {
+            int neededSize = _length + additionalCapacity;
             int newSize = _codepoints.Length;
-            while (_length + additionalCapacity > newSize)
+            while (neededSize > newSize)
                 newSize = newSize * 3 / 2 + 1;
             
             if (newSize > _codepoints.Length)

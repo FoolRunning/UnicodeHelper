@@ -48,12 +48,13 @@ namespace UnicodeHelper
         private static readonly byte[] categories;
         private static readonly UnicodeBidiClass[] bidiClasses;
         private static readonly Dictionary<UCodepoint, double> numericValues;
-        private static readonly Dictionary<UCodepoint, UCodepoint> upperCaseMappings;
-        private static readonly Dictionary<UCodepoint, UCodepoint> lowerCaseMappings;
-        private static readonly Dictionary<UCodepoint, UCodepoint> titleCaseMappings;
+        private static readonly CodepointMapTable upperCaseMappings;
+        private static readonly CodepointMapTable lowerCaseMappings;
+        private static readonly CodepointMapTable titleCaseMappings;
         private static readonly Dictionary<long, UCodepoint> compositionMapping;
         private static readonly Dictionary<int, UCodepoint[]> decompositionMapping;
         private static readonly byte[] combiningClasses;
+        private static readonly NormalizationFlags[] normalizationFlags;
         #endregion
 
         #region Static constructor
@@ -72,6 +73,7 @@ namespace UnicodeHelper
             compositionMapping = loader.CompositionMapping;
             decompositionMapping = loader.DecompositionMapping;
             combiningClasses = loader.CombiningClasses;
+            normalizationFlags = loader.NormalizationFlagsTable;
         }
         #endregion
 
@@ -104,6 +106,14 @@ namespace UnicodeHelper
         /// </summary>
         internal static byte[] CombiningClassTable => combiningClasses;
 
+        /// <summary>
+        /// Gets the facts about the specified codepoint that the normalization engine uses to skip work
+        /// </summary>
+        internal static NormalizationFlags GetNormalizationFlags(UCodepoint uc)
+        {
+            return normalizationFlags[(int)uc];
+        }
+
         internal static UCodepoint GetComposition(UCodepoint ucBase, UCodepoint ucCombining)
         {
             long key = Keys.CreateCombiningKey(ucBase, ucCombining, false);
@@ -133,12 +143,12 @@ namespace UnicodeHelper
 
         internal static UCodepoint ToUpper(UCodepoint uc)
         {
-            return upperCaseMappings.TryGetValue(uc, out UCodepoint upper) ? upper : uc;
+            return upperCaseMappings.Map(uc);
         }
 
         internal static UCodepoint ToLower(UCodepoint uc)
         {
-            return lowerCaseMappings.TryGetValue(uc, out UCodepoint lower) ? lower : uc;
+            return lowerCaseMappings.Map(uc);
         }
         #endregion
 
@@ -155,9 +165,9 @@ namespace UnicodeHelper
                 return (HelperUtils.BoolToInt(compatMapping) << BitShift) | (int)uc;
             }
 
-            public static void UncreateDecompKey(int decompKey, /*out UCodepoint uc,*/ out bool compatMapping)
+            public static void UncreateDecompKey(int decompKey, out UCodepoint uc, out bool compatMapping)
             {
-                //uc = (UCodepoint)(decompKey & BitMask);
+                uc = (UCodepoint)(decompKey & BitMask);
                 compatMapping = (decompKey & (1 << BitShift)) != 0;
             }
 
@@ -166,10 +176,12 @@ namespace UnicodeHelper
                 return ((long)HelperUtils.BoolToInt(compatMapping) << (BitShift * 2)) | ((long)cpBase << BitShift) | (long)cpCombining;
             }
 
-            public static void UncreateCombiningKey(long key, out UCodepoint cpBase/*, out UCodepoint cpCombining*/)
+            public static void UncreateCombiningKey(long key, out UCodepoint cpBase, out UCodepoint cpCombining,
+                out bool compatMapping)
             {
                 cpBase = (UCodepoint)(int)((key >> BitShift) & BitMask);
-                //cpCombining = (UCodepoint)(int)(key & BitMask);
+                cpCombining = (UCodepoint)(int)(key & BitMask);
+                compatMapping = (key >> (BitShift * 2)) != 0;
             }
         }
         #endregion
@@ -190,12 +202,13 @@ namespace UnicodeHelper
             public readonly byte[] Categories = new byte[UnicodeCodepointCount];
             public readonly UnicodeBidiClass[] BidiClasses = new UnicodeBidiClass[UnicodeCodepointCount];
             public readonly Dictionary<UCodepoint, double> NumericValues = new Dictionary<UCodepoint, double>(2000);
-            public readonly Dictionary<UCodepoint, UCodepoint> UpperCaseMappings = new Dictionary<UCodepoint, UCodepoint>(1600);
-            public readonly Dictionary<UCodepoint, UCodepoint> LowerCaseMappings = new Dictionary<UCodepoint, UCodepoint>(1600);
-            public readonly Dictionary<UCodepoint, UCodepoint> TitleCaseMappings = new Dictionary<UCodepoint, UCodepoint>(1600);
+            public readonly CodepointMapTable UpperCaseMappings = new CodepointMapTable();
+            public readonly CodepointMapTable LowerCaseMappings = new CodepointMapTable();
+            public readonly CodepointMapTable TitleCaseMappings = new CodepointMapTable();
             public readonly Dictionary<long, UCodepoint> CompositionMapping = new Dictionary<long, UCodepoint>(2700);
             public readonly Dictionary<int, UCodepoint[]> DecompositionMapping = new Dictionary<int, UCodepoint[]>(8500);
             public readonly byte[] CombiningClasses = new byte[UnicodeCodepointCount];
+            public readonly NormalizationFlags[] NormalizationFlagsTable = new NormalizationFlags[UnicodeCodepointCount];
             #endregion
 
             #region Public methods
@@ -279,6 +292,7 @@ namespace UnicodeHelper
 
                 CleanUpCompositions();
                 FullyExpandDecomposition();
+                ComputeNormalizationFlags();
             }
             #endregion
 
@@ -296,7 +310,10 @@ namespace UnicodeHelper
                 Categories[codePoint] = (byte)UnicodeConversion.ConvertCategory(line[GeneralCategoryField]);
 
                 // Combining class
-                CombiningClasses[codePoint] = byte.Parse(line[CombiningClassField], CultureInfo.InvariantCulture);
+                byte combiningClass = byte.Parse(line[CombiningClassField], CultureInfo.InvariantCulture);
+                CombiningClasses[codePoint] = combiningClass;
+                if (combiningClass != 0)
+                    NormalizationFlagsTable[codePoint] |= NormalizationFlags.NonZeroCombiningClass;
 
                 // Bidi class
                 BidiClasses[codePoint] = UnicodeConversion.ConvertBidiClass(line[BidiClassField]);
@@ -380,7 +397,7 @@ namespace UnicodeHelper
                 List<long> toRemove = new List<long>();
                 foreach (KeyValuePair<long, UCodepoint> kvp in CompositionMapping)
                 {
-                    Keys.UncreateCombiningKey(kvp.Key, out UCodepoint cpBase/*, out _*/);
+                    Keys.UncreateCombiningKey(kvp.Key, out UCodepoint cpBase, out _, out _);
                     if (CombiningClasses[(int)cpBase] != 0 || compositionExclusions.IsExcluded(kvp.Value))
                         toRemove.Add(kvp.Key);
                 }
@@ -399,7 +416,7 @@ namespace UnicodeHelper
                     changedSomething = false;
                     foreach (KeyValuePair<int, UCodepoint[]> kvp in DecompositionMapping.ToArray())
                     {
-                        Keys.UncreateDecompKey(kvp.Key, /*out _,*/ out bool compatMapping);
+                        Keys.UncreateDecompKey(kvp.Key, out _, out bool compatMapping);
 
                         newMapping.Clear();
                         for (int i = 0; i < kvp.Value.Length; i++)
@@ -422,6 +439,91 @@ namespace UnicodeHelper
                     }
                 }
                 while (changedSomething);
+            }
+
+            /// <summary>
+            /// Computes the <see cref="NormalizationFlags"/> for every codepoint from the finished tables.
+            /// </summary>
+            [MethodImpl(HelperUtils.AggressiveOptimization)]
+            private void ComputeNormalizationFlags()
+            {
+                // (NonZeroCombiningClass is set by UpdateDatabase)
+                NormalizationFlags[] flags = NormalizationFlagsTable;
+
+                // Hangul syllables decompose algorithmically and vowel/trailing-consonant jamo compose
+                // algorithmically (see NormalizationEngine.GetComposite for the exact ranges)
+                for (int c = NormalizationEngine.SBase; c <= NormalizationEngine.SEnd; c++)
+                    flags[c] |= NormalizationFlags.HangulSyllable;
+                for (int c = NormalizationEngine.VBase; c <= NormalizationEngine.VEnd; c++)
+                    flags[c] |= NormalizationFlags.ComposesAsSecond;
+                for (int c = NormalizationEngine.TBase + 1; c <= NormalizationEngine.TEnd; c++) // TBase itself is not a T jamo
+                    flags[c] |= NormalizationFlags.ComposesAsSecond;
+
+                foreach (KeyValuePair<int, UCodepoint[]> kvp in DecompositionMapping)
+                {
+                    Keys.UncreateDecompKey(kvp.Key, out UCodepoint uc, out bool compatMapping);
+                    flags[(int)uc] |= compatMapping ?
+                        NormalizationFlags.HasCompatDecomposition : NormalizationFlags.HasCanonicalDecomposition;
+                }
+
+                // Primary composites are the codepoints that canonical composition can produce. Since they
+                // are exactly what their own decomposition recomposes to, normalizing to Form C leaves them alone.
+                HashSet<UCodepoint> primaryComposites = new HashSet<UCodepoint>();
+                foreach (KeyValuePair<long, UCodepoint> kvp in CompositionMapping)
+                {
+                    Keys.UncreateCombiningKey(kvp.Key, out _, out UCodepoint cpCombining, out bool compatMapping);
+                    if (compatMapping)
+                        continue; // Only the canonical table is used for composition
+
+                    flags[(int)cpCombining] |= NormalizationFlags.ComposesAsSecond;
+                    primaryComposites.Add(kvp.Value);
+                }
+
+                // A codepoint whose decomposition begins with a composing second can itself combine with a
+                // preceding codepoint once it has been decomposed (e.g. U+16D63 U+16D68 normalizes to U+16D6A
+                // because U+16D68 decomposes to U+16D67 U+16D67), so it needs the flag as well. The mappings
+                // are fully expanded, so a single pass suffices.
+                foreach (KeyValuePair<int, UCodepoint[]> kvp in DecompositionMapping)
+                {
+                    Keys.UncreateDecompKey(kvp.Key, out UCodepoint uc, out _);
+                    if ((flags[(int)kvp.Value[0]] & NormalizationFlags.ComposesAsSecond) != 0)
+                        flags[(int)uc] |= NormalizationFlags.ComposesAsSecond;
+                }
+
+                foreach (KeyValuePair<int, UCodepoint[]> kvp in DecompositionMapping)
+                {
+                    Keys.UncreateDecompKey(kvp.Key, out UCodepoint uc, out bool compatMapping);
+                    bool isPrimaryComposite = primaryComposites.Contains(uc);
+                    if (!compatMapping)
+                    {
+                        if (!isPrimaryComposite)
+                            flags[(int)uc] |= NormalizationFlags.NfcNo;
+                    }
+                    else
+                    {
+                        // Form KC leaves a codepoint alone only if it is a primary composite whose compatibility
+                        // decomposition is no different from its canonical one (both are fully expanded here).
+                        bool stable = isPrimaryComposite &&
+                            DecompositionMapping.TryGetValue(Keys.CreateDecompKey(uc, false), out UCodepoint[] canonical) &&
+                            AreSame(canonical, kvp.Value);
+                        if (!stable)
+                            flags[(int)uc] |= NormalizationFlags.NfkcNo;
+                    }
+                }
+            }
+
+            private static bool AreSame(UCodepoint[] mapping1, UCodepoint[] mapping2)
+            {
+                if (mapping1.Length != mapping2.Length)
+                    return false;
+
+                for (int i = 0; i < mapping1.Length; i++)
+                {
+                    if (mapping1[i] != mapping2[i])
+                        return false;
+                }
+
+                return true;
             }
             #endregion
         }

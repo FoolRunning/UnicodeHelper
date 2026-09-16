@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using UnicodeHelper.Internal;
+// ReSharper disable ConvertToAutoPropertyWhenPossible
 
 namespace UnicodeHelper
 {
@@ -106,10 +107,13 @@ namespace UnicodeHelper
             int codePointIndex = 0;
             for (int i = startIndex; i < end; i++)
             {
-                UCodepoint uc = UCodepoint.ReadFromStr(dotNetString, i);
-                codepoints[codePointIndex++] = uc;
-                if (uc > 0xFFFF)
-                    i++; // Step over low surrogate
+                char c = dotNetString[i];
+                if (!char.IsSurrogate(c))
+                    codepoints[codePointIndex++] = c;
+                else if (char.IsHighSurrogate(c) && i + 1 < end && char.IsLowSurrogate(dotNetString[i + 1]))
+                    codepoints[codePointIndex++] = UCodepoint.FromValidSurrogatePair(c, dotNetString[++i]);
+                else
+                    throw new ArgumentException($"Invalid surrogate at index {i}", nameof(dotNetString));
             }
 
             Debug.Assert(totalCodePointCount == codePointIndex, "Precalculation of size was incorrect");
@@ -139,6 +143,17 @@ namespace UnicodeHelper
         /// Gets the number of Unicode codepoints that make up this Unicode string
         /// </summary>
         public int Length { get; }
+
+        /// <summary>
+        /// The array holding this string's codepoints (shared with any substrings). The string's codepoints
+        /// start at <see cref="StartIndex"/> and run for <see cref="Length"/> elements.
+        /// </summary>
+        internal UCodepoint[] Codepoints => _codepoints;
+
+        /// <summary>
+        /// The index in <see cref="Codepoints"/> at which this string starts
+        /// </summary>
+        internal int StartIndex => _startIndex;
 
         /// <summary>
         /// Gets the number of .Net characters that make up this Unicode string
@@ -720,6 +735,7 @@ namespace UnicodeHelper
                 UCodepoint cp = _codepoints[i];
                 if (cp == value)
                     return true;
+
                 if (ignoreCase && (UCodepoint.ToLower(cp) == value || UCodepoint.ToUpper(cp) == value))
                     return true;
             }
@@ -746,15 +762,15 @@ namespace UnicodeHelper
                 {
                     UCodepoint thisChar = _codepoints[i + j];
                     UCodepoint valueChar = value._codepoints[valueStart + j];
-                    if (thisChar != valueChar)
+                    if (thisChar == valueChar) 
+                        continue;
+
+                    if (!ignoreCase ||
+                        (thisChar != UCodepoint.ToLower(valueChar) &&
+                         thisChar != UCodepoint.ToUpper(valueChar)))
                     {
-                        if (!ignoreCase ||
-                            (thisChar != UCodepoint.ToLower(valueChar) &&
-                             thisChar != UCodepoint.ToUpper(valueChar)))
-                        {
-                            found = false;
-                            break;
-                        }
+                        found = false;
+                        break;
                     }
                 }
                 if (found)
@@ -793,22 +809,22 @@ namespace UnicodeHelper
             List<UString> result = new List<UString>();
             for (int i = 0; i < Length; i++)
             {
-                if (Array.Exists(separators, s => this[i] == s))
-                {
-                    if (options != StringSplitOptions.RemoveEmptyEntries || i > currentSegmentStart)
-                    {
-                        result.Add(SubString(currentSegmentStart, i - currentSegmentStart));
-                        segmentCount++;
-                        
-                        if (segmentCount == maxCount - 1)
-                        {
-                            result.Add(SubString(i + 1));
-                            return result;
-                        }
-                    }
+                if (!IsAnyOf(_codepoints[_startIndex + i], separators))
+                    continue;
 
-                    currentSegmentStart = i + 1;
+                if (options != StringSplitOptions.RemoveEmptyEntries || i > currentSegmentStart)
+                {
+                    result.Add(SubString(currentSegmentStart, i - currentSegmentStart));
+                    segmentCount++;
+
+                    if (segmentCount == maxCount - 1)
+                    {
+                        result.Add(SubString(i + 1));
+                        return result;
+                    }
                 }
+
+                currentSegmentStart = i + 1;
             }
 
             if (currentSegmentStart < Length || (options != StringSplitOptions.RemoveEmptyEntries && currentSegmentStart == Length))
@@ -885,7 +901,24 @@ namespace UnicodeHelper
         }
 
         /// <summary>
-        /// Normalizes the current Unicode string to the default normalization form (Form C).
+        /// Determines if this Unicode string is fully normalized to the default normalization form (Form C).
+        /// </summary>
+        public bool IsNormalized()
+        {
+            return IsNormalized(NormalizationForm.FormC);
+        }
+
+        /// <summary>
+        /// Determines if this Unicode string is fully normalized to the specified normalization form
+        /// (i.e. whether normalizing it would leave it unchanged).
+        /// </summary>
+        public bool IsNormalized(NormalizationForm form)
+        {
+            return NormalizationEngine.IsNormalized(this, form);
+        }
+
+        /// <summary>
+        /// Normalizes this Unicode string to the default normalization form (Form C).
         /// </summary>
         public UString Normalize()
         {
@@ -893,7 +926,7 @@ namespace UnicodeHelper
         }
 
         /// <summary>
-        /// Normalizes the current Unicode string to the specified Unicode normalization form.
+        /// Normalizes this Unicode string to the specified Unicode normalization form.
         /// </summary>
         public UString Normalize(NormalizationForm form)
         {
@@ -1033,6 +1066,21 @@ namespace UnicodeHelper
         internal void CopyTo(UCodepoint[] array, int arrayIndex)
         {
             Array.Copy(_codepoints, _startIndex, array, arrayIndex, Length);
+        }
+        #endregion
+
+        #region Helper methods
+        private static bool IsAnyOf(UCodepoint uc, UCodepoint[] candidates)
+        {
+            // ReSharper disable once ForCanBeConvertedToForeach
+            // ReSharper disable once LoopCanBeConvertedToQuery
+            for (int i = 0; i < candidates.Length; i++)
+            {
+                if (candidates[i] == uc)
+                    return true;
+            }
+
+            return false;
         }
         #endregion
 

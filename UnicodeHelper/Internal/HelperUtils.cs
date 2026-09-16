@@ -54,7 +54,7 @@ namespace UnicodeHelper.Internal
         /// <remarks>Fills a small block by hand and then doubles it with <see cref="Array.Copy(Array,Array,int)"/>,
         /// which runs at memmove speed. This is much faster than a plain loop for the large per-codepoint
         /// tables, particularly since initialization code usually runs before the JIT has optimized it.</remarks>
-        [MethodImpl(HelperUtils.AggressiveOptimization)]
+        [MethodImpl(AggressiveOptimization)]
         public static void Fill<T>(T[] array, T value)
         {
             int filled = Math.Min(array.Length, 32);
@@ -91,7 +91,7 @@ namespace UnicodeHelper.Internal
         /// Sorts the specified decomposed character array in Unicode canonical order using the
         /// specified table of combining classes (indexed by codepoint).
         /// </summary>
-        [MethodImpl(HelperUtils.AggressiveOptimization)]
+        [MethodImpl(AggressiveOptimization)]
         public static void SortCanonical(UCodepoint[] decomposedChar, int count, byte[] combiningClasses)
         {
             for (int i = 1; i < count; i++)

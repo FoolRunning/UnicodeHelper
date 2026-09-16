@@ -172,6 +172,8 @@ namespace UnicodeHelper
             [MethodImpl(HelperUtils.AggressiveOptimization)]
             private string ExpandNamePattern(string pattern, int codepoint)
             {
+                Debug.Assert(pattern[pattern.Length - 1] == '*');
+
                 int prefixLength = pattern.Length - 1;
                 int hexDigits = codepoint <= 0xFFFF ? 4 : (codepoint <= 0xFFFFF ? 5 : 6);
                 int nameLength = prefixLength + hexDigits;

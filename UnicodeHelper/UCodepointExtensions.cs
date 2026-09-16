@@ -9,7 +9,7 @@ namespace UnicodeHelper
     public enum HexPadding
     {
         /// <summary>
-        /// For most characters, this results in a 4-character hex string padded with zeros.
+        /// For most characters, this results in a 4-character hex string padded with leading zeros.
         /// For the upper planes, this is the minimal number of characters needed to represent
         /// the character (5 or 6).
         /// </summary>

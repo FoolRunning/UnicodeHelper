@@ -68,14 +68,14 @@ namespace UnicodeHelper
             return new UCodepoint(c);
         }
 
-        private UCodepoint(char value)
+        /// <summary>
+        /// Creates a <see cref="UCodepoint"/> from a surrogate pair that the caller has already validated
+        /// (high surrogate followed by low surrogate). Performs no checks.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static UCodepoint FromValidSurrogatePair(char highSurrogate, char lowSurrogate)
         {
-            _value = value;
-        }
-
-        private UCodepoint(int value)
-        {
-            _value = value;
+            return new UCodepoint(((highSurrogate - 0xD800) << 10) + (lowSurrogate - 0xDC00) + 0x10000);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -84,6 +84,18 @@ namespace UnicodeHelper
             if (codepoint < 0 || codepoint > UnicodeData.MaxUnicodeCodepoint)
                 throw new ArgumentOutOfRangeException(nameof(codepoint), "Codepoint is outside the valid Unicode range");
             return new UCodepoint(codepoint);
+        }
+        #endregion
+
+        #region Constructors (private)
+        private UCodepoint(char value)
+        {
+            _value = value;
+        }
+
+        private UCodepoint(int value)
+        {
+            _value = value;
         }
         #endregion
 
@@ -329,7 +341,9 @@ namespace UnicodeHelper
         /// <inheritdoc />
         public override int GetHashCode()
         {
-            return HashCode.Combine(_value);
+            // The value is already a well-distributed 21-bit integer, so it is its own hash. (Mixing it
+            // through HashCode.Combine cost more than the dictionary lookups it was feeding.)
+            return _value;
         }
 
         /// <summary>

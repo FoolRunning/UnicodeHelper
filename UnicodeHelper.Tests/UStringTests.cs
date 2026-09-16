@@ -1159,6 +1159,141 @@ namespace UnicodeHelper
                     ErrorString(testData.NfkcResult, result, testData.Description));
             }
         }
+
+        // Hangul is composed algorithmically (UAX #15 section 3.12). The jamo blocks are: leading consonants (L)
+        // U+1100..U+1112, vowels (V) U+1161..U+1175 and trailing consonants (T) U+11A8..U+11C2. U+11A7 is TBase in the
+        // algorithm's arithmetic but is NOT a trailing consonant (it is the vowel O-YAE), and U+11C3 is just past the end.
+        private static IEnumerable<object[]> HangulNormalizationTestData =>
+        [
+            ["\u1100\u1161", "\uAC00", "\u1100\u1161"],                 // L + V -> LV syllable
+            ["\u1100\u1161\u11A8", "\uAC01", "\u1100\u1161\u11A8"],   // L + V + T -> LVT syllable
+            ["\uAC00\u11A8", "\uAC01", "\u1100\u1161\u11A8"],          // LV syllable + T -> LVT syllable
+            ["\uAC00\u11C2", "\uAC1B", "\u1100\u1161\u11C2"],          // LV syllable + last T
+            ["\uAC00\u11A7", "\uAC00\u11A7", "\u1100\u1161\u11A7"],   // LV syllable + TBase (a vowel): no composition, nothing dropped
+            ["\uAC00\u11C3", "\uAC00\u11C3", "\u1100\u1161\u11C3"],   // LV syllable + jamo just past the T range
+            ["\uAC01\u11A7", "\uAC01\u11A7", "\u1100\u1161\u11A8\u11A7"], // LVT syllable + TBase: LVT cannot take another T
+            ["\uAC01\u11A8", "\uAC01\u11A8", "\u1100\u1161\u11A8\u11A8"], // LVT syllable + T: LVT cannot take another T
+            ["\u1100\u11A7", "\u1100\u11A7", "\u1100\u11A7"],          // L + TBase: not a vowel, no composition
+            ["\u1100\u1161\u11A7", "\uAC00\u11A7", "\u1100\u1161\u11A7"], // L + V + TBase: LV composes, TBase stays
+            ["\uD7A3\u11A7", "\uD7A3\u11A7", "\u1112\u1175\u11C2\u11A7"], // Last syllable + TBase
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(HangulNormalizationTestData))]
+        public void Normalization_Hangul(string source, string expectedNfc, string expectedNfd)
+        {
+            UString us = new(source);
+            UString nfc = new(expectedNfc);
+            UString nfd = new(expectedNfd);
+
+            Assert.AreEqual(nfc, us.Normalize(NormalizationForm.FormC), 
+                ErrorString(nfc, us.Normalize(NormalizationForm.FormC), "NFC"));
+            Assert.AreEqual(nfd, us.Normalize(NormalizationForm.FormD), 
+                ErrorString(nfd, us.Normalize(NormalizationForm.FormD), "NFD"));
+            Assert.AreEqual(nfc, us.Normalize(NormalizationForm.FormKC), 
+                ErrorString(nfc, us.Normalize(NormalizationForm.FormKC), "NFKC"));
+            Assert.AreEqual(nfd, us.Normalize(NormalizationForm.FormKD), 
+                ErrorString(nfd, us.Normalize(NormalizationForm.FormKD), "NFKD"));
+
+            // The quick check must agree with the full algorithm
+            Assert.AreEqual(nfc.Equals(us), us.IsNormalized(NormalizationForm.FormC));
+            Assert.AreEqual(nfd.Equals(us), us.IsNormalized(NormalizationForm.FormD));
+
+            // Round trips
+            Assert.AreEqual(nfc, nfd.Normalize(NormalizationForm.FormC));
+            Assert.AreEqual(nfd, nfc.Normalize(NormalizationForm.FormD));
+
+            // Sanity check (make sure test data matches what .Net does)
+            Assert.AreEqual(expectedNfc, source.Normalize(NormalizationForm.FormC));
+            Assert.AreEqual(expectedNfd, source.Normalize(NormalizationForm.FormD));
+        }
+        #endregion
+
+        #region IsNormalized tests
+        // Columns: source, is NFC, is NFD, is NFKC, is NFKD. Cases are chosen so that the per-codepoint quick check
+        // is inconclusive ("maybe") and the exact check has to do the work.
+        private static IEnumerable<object[]> IsNormalizedTestData =>
+        [
+            ["", true, true, true, true],
+            ["abc 123", true, true, true, true],
+            ["caf\u00E9", true, false, true, false],                     // precomposed e-acute
+            ["cafe\u0301", false, true, false, true],                    // e + combining acute
+            ["q\u0301", true, true, true, true],                         // mark with no composite: normalized in every form
+            ["a\u0327\u0301", false, true, false, true],                  // cedilla (202) then acute (230): ordered, but the acute is not blocked and composes with the a
+            ["a\u0301\u0327", false, false, false, false],              // acute (230) then cedilla (202): out of canonical order
+            ["\u0229\u0301", true, false, true, false],                 // e-cedilla + acute: nothing further composes
+            ["\u00E9\u0327", false, false, false, false],               // e-acute + cedilla: reorders to e-cedilla + acute
+            ["\u1E09", true, false, true, false],                        // c-cedilla-acute (two-level decomposition)
+            ["\u0063\u0327\u0301", false, true, false, true],          // its full decomposition
+            ["\u212B", false, false, false, false],                      // ANGSTROM SIGN: singleton decomposition
+            ["\u0958", false, false, false, false],                      // DEVANAGARI QA: composition-excluded
+            ["\u0915\u093C", true, true, true, true],                   // its decomposition stays decomposed in NFC too
+            ["\uFB01", true, true, false, false],                        // fi ligature: compatibility only
+            ["\u1E9B", true, false, false, false],                       // long s with dot above: NFKC differs (long s -> s)
+            ["\u1100\u1161", false, true, false, true],                 // L + V jamo compose
+            ["\uAC00", true, false, true, false],                        // Hangul syllable
+            ["\uAC00\u11A8", false, false, false, false],               // LV + T composes to LVT
+            ["\uAC01\u11A8", true, false, true, false],                 // LVT + T: already NFC (quick check says maybe)
+            ["\uAC00\u11A7", true, false, true, false],                 // LV + a vowel that looks like TBase
+            ["\U00016D68", true, false, true, false],                    // KIRAT RAI AI: primary composite
+            ["\U00016D63\U00016D68", false, false, false, false],        // AA + AI composes (via AI's decomposition)
+            ["\U00016D67\U00016D68", false, false, false, false],        // E + AI recomposes as AI + E
+            ["\U00016D68\U00016D67", true, false, true, false],          // AI + E: already NFC
+            ["x\u0301q\u0301z", true, true, true, true],                // several inconclusive segments, all fine (no x/q composites)
+            ["x\u0301q\u0301e\u0301", false, true, false, true],       // ... except the last one
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(IsNormalizedTestData))]
+        public void IsNormalized(string source, bool isNfc, bool isNfd, bool isNfkc, bool isNfkd)
+        {
+            UString us = new(source);
+
+            // Sanity check of the expectations against the full algorithm (which the conformance suite validates)
+            Assert.AreEqual(isNfc, us.Normalize(NormalizationForm.FormC).Equals(us), "Expected NFC value is wrong");
+            Assert.AreEqual(isNfd, us.Normalize(NormalizationForm.FormD).Equals(us), "Expected NFD value is wrong");
+            Assert.AreEqual(isNfkc, us.Normalize(NormalizationForm.FormKC).Equals(us), "Expected NFKC value is wrong");
+            Assert.AreEqual(isNfkd, us.Normalize(NormalizationForm.FormKD).Equals(us), "Expected NFKD value is wrong");
+
+            Assert.AreEqual(isNfc, us.IsNormalized(NormalizationForm.FormC), "NFC");
+            Assert.AreEqual(isNfd, us.IsNormalized(NormalizationForm.FormD), "NFD");
+            Assert.AreEqual(isNfkc, us.IsNormalized(NormalizationForm.FormKC), "NFKC");
+            Assert.AreEqual(isNfkd, us.IsNormalized(NormalizationForm.FormKD), "NFKD");
+            Assert.AreEqual(isNfc, us.IsNormalized(), "Default form is NFC");
+
+            // Substrings share their array with the parent, so offsets must be handled correctly
+            UString sub = CreateTestSubstring(source);
+            Assert.AreEqual(isNfc, sub.IsNormalized(NormalizationForm.FormC), "NFC (substring)");
+            Assert.AreEqual(isNfd, sub.IsNormalized(NormalizationForm.FormD), "NFD (substring)");
+            Assert.AreEqual(isNfkc, sub.IsNormalized(NormalizationForm.FormKC), "NFKC (substring)");
+            Assert.AreEqual(isNfkd, sub.IsNormalized(NormalizationForm.FormKD), "NFKD (substring)");
+        }
+
+        [TestMethod]
+        public void IsNormalized_AgreesWithNormalize()
+        {
+            // The exact check must agree with the full algorithm on the whole conformance test suite
+            NormalizationForm[] forms = [NormalizationForm.FormC, NormalizationForm.FormD, NormalizationForm.FormKC, NormalizationForm.FormKD];
+            UString[] strings = new UString[5]; // Reuse buffer for speed
+            foreach (NormalizationTestData testData in NormalizationTestDataSet.TestCases)
+            {
+                strings[0] = testData.Source;
+                strings[1] = testData.NfcResult;
+                strings[2] = testData.NfdResult;
+                strings[3] = testData.NfkcResult;
+                strings[4] = testData.NfkdResult;
+
+                foreach (NormalizationForm form in forms)
+                {
+                    foreach (UString us in strings)
+                    {
+                        bool expected = us.Normalize(form).Equals(us);
+                        Assert.AreEqual(expected, us.IsNormalized(form),
+                            $"IsNormalized({form}) disagrees with Normalize for {testData.Description}");
+                    }
+                }
+            }
+        }
         #endregion
 
         #region Private helper methods
