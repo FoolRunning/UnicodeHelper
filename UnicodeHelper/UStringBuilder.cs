@@ -129,7 +129,6 @@ namespace UnicodeHelper
         /// <summary>
         /// Gets or sets the length of the <see cref="UStringBuilder"/>.
         /// </summary>
-        // TODO: Write tests for this property get/set
         public int Length
         {
             get => _length;
@@ -150,7 +149,6 @@ namespace UnicodeHelper
         /// <summary>
         /// Gets or sets the <see cref="UCodepoint"/> at the specified index in the <see cref="UStringBuilder"/>.
         /// </summary>
-        // TODO: Write tests for this property get/set
         public UCodepoint this[int index]
         {
             get
@@ -186,7 +184,6 @@ namespace UnicodeHelper
         /// </summary>
         public void Append(UCodepoint[] uCodepoints, int length)
         {
-            // TODO: Write tests for this method
             if (uCodepoints == null)
                 throw new ArgumentNullException(nameof(uCodepoints));
             if (length < 0 || length > uCodepoints.Length)

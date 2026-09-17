@@ -222,8 +222,6 @@ namespace UnicodeHelper
                 // Load defaults for categories
                 HelperUtils.Fill(Categories, (byte)UnicodeCategory.OtherNotAssigned);
 
-                // TODO: Test default bidi values
-
                 // Load defaults for bidi class. This is dependent on the range of characters
                 // where a codepoint occurs.
                 // (see https://www.unicode.org/Public/UCD/latest/ucd/extracted/DerivedBidiClass.txt).

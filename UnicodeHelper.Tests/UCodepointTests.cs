@@ -76,6 +76,29 @@ namespace UnicodeHelper
         {
             Assert.AreEqual(expectedBidiClass, UCodepoint.GetBidiClass(uc));
         }
+
+        // Unassigned codepoints inside the pre-loaded default bidi ranges must receive the
+        // range default (per DerivedBidiClass.txt), since no explicit data overrides them.
+        private static IEnumerable<object[]> BidiDefaultRangeTestData =>
+        [
+            [(UCodepoint)0x0378, UnicodeBidiClass.LeftToRight],      // unassigned, general default
+            [(UCodepoint)0x0590, UnicodeBidiClass.RightToLeft],      // 0590-05FF
+            [(UCodepoint)0x10806, UnicodeBidiClass.RightToLeft],     // 10800-10CFF
+            [(UCodepoint)0x1EC70, UnicodeBidiClass.ArabicLetter],    // 1EC70-1ECBF (start)
+            [(UCodepoint)0x1ECBF, UnicodeBidiClass.ArabicLetter],    // 1EC70-1ECBF (end)
+            [(UCodepoint)0x1EFF0, UnicodeBidiClass.RightToLeft],     // 1EF00-1EFFF
+            [(UCodepoint)0x10D3F, UnicodeBidiClass.ArabicLetter]     // 10D00-10D3F (end)
+        ];
+
+        [TestMethod]
+        [DynamicData(nameof(BidiDefaultRangeTestData))]
+        public void GetBidiClass_DefaultValuesForUnassignedCodepoints(UCodepoint uc, UnicodeBidiClass expectedBidiClass)
+        {
+            // Preconditions: these must be unassigned so the result comes from the default fill
+            Assert.AreEqual(UnicodeCategory.OtherNotAssigned, UCodepoint.GetUnicodeCategory(uc),
+                "Test relies on an unassigned codepoint");
+            Assert.AreEqual(expectedBidiClass, UCodepoint.GetBidiClass(uc));
+        }
         #endregion
 
         #region IsUpper tests
